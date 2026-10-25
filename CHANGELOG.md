@@ -6,6 +6,8 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-25
+
 ### Added
 
 - `FeedbackView`: Swiftflip's feedback form as a package, for iOS sheets and macOS sheets or windows. It covers the message and optional email fields, the diagnostics footer, the email check, the Send morph through a spinner to a checkmark, the 1.5 s thank-you hold, the failure alert with Try Again, the offline message, Discard Changes from the close button and from a swipe-down, and the cannot-send state for devices without App Attest.
