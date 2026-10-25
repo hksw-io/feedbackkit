@@ -1,0 +1,246 @@
+# FeedbackKit
+
+[![CI](https://github.com/hksw-io/feedbackkit/actions/workflows/ci.yml/badge.svg)](https://github.com/hksw-io/feedbackkit/actions/workflows/ci.yml)
+
+A reusable SwiftUI feedback form for iOS and macOS apps in the HK Softworks portfolio. It replaces
+Mail: the message goes straight to the shared HK Softworks feedback service, signed with App Attest
+and the app's AppTransaction, so the service only accepts it from a genuine copy of the app.
+
+The kit owns the form, the diagnostics, the App Attest key and the whole request flow. The app passes
+the service URL and its copy. No dependencies.
+
+## Preview
+
+<p>
+  <img src="Docs/Media/feedbackkit-iphone-light-empty.jpg" width="200" alt="Send Feedback on iPhone in light mode: an empty message field with the prompt Request a feature or describe a problem, the footer Your app version, system version, device model and language are sent with your message, an Email (Optional) field and a dimmed Send button.">
+  <img src="Docs/Media/feedbackkit-iphone-light-typed.jpg" width="200" alt="The same form with a typed message; the Send button is now blue.">
+  <img src="Docs/Media/feedbackkit-iphone-light-email.jpg" width="200" alt="The email field holds name@ and its footer reads Enter a full email address, like name@example.com.">
+</p>
+<p>
+  <img src="Docs/Media/feedbackkit-iphone-light-sending.jpg" width="200" alt="While sending, the Send button shows a spinner.">
+  <img src="Docs/Media/feedbackkit-iphone-light-thanks.jpg" width="200" alt="After sending, the Send button shows a checkmark and the footer reads Thanks! Your feedback was sent.">
+  <img src="Docs/Media/feedbackkit-iphone-light-failed.jpg" width="200" alt="A failed send: the alert Couldn’t Send Feedback, Something went wrong. Try again in a moment., with Cancel and Try Again.">
+</p>
+
+Empty, typed, an incomplete email address, sending, sent, and a failed send. Send morphs to a spinner
+and then a checkmark, and the form holds the thanks for 1.5 seconds before it closes.
+
+<p>
+  <img src="Docs/Media/feedbackkit-iphone-dark-empty.jpg" width="200" alt="The empty form in dark mode.">
+  <img src="Docs/Media/feedbackkit-iphone-dark-typed.jpg" width="200" alt="The typed form in dark mode.">
+  <img src="Docs/Media/feedbackkit-iphone-dark-email.jpg" width="200" alt="The email error in dark mode.">
+</p>
+<p>
+  <img src="Docs/Media/feedbackkit-iphone-dark-sending.jpg" width="200" alt="Sending in dark mode.">
+  <img src="Docs/Media/feedbackkit-iphone-dark-thanks.jpg" width="200" alt="Sent in dark mode.">
+  <img src="Docs/Media/feedbackkit-iphone-dark-failed.jpg" width="200" alt="The failure alert in dark mode.">
+</p>
+
+The same states in dark mode.
+
+## Requirements
+
+- iOS 26+ / macOS 26+
+- Swift 6.2+
+- The App Attest capability (`com.apple.developer.devicecheck.appattest-environment`, `production` for
+  TestFlight and the App Store)
+- The app's bundle ID and App Apple ID in the feedback service's app list
+
+Devices without App Attest can't send feedback, and there is no Mail fallback: the form says so
+plainly and disables Send.
+
+## Installation
+
+```swift
+.package(url: "https://github.com/hksw-io/feedbackkit.git", from: "1.0.0")
+```
+
+Or in Xcode: **File > Add Package Dependencies**, enter the URL above, and choose **Up to Next Major Version** from `1.0.0`.
+
+## Usage
+
+Present `FeedbackView` in a sheet on iOS, and in a sheet or a window on macOS:
+
+```swift
+import FeedbackKit
+import SwiftUI
+
+.sheet(isPresented: $showsFeedback) {
+    FeedbackView(
+        serviceURL: URL(string: "https://feedback.example.com")!,
+        strings: feedbackText,
+        onDismiss: { showsFeedback = false })
+}
+```
+
+`serviceURL` is the service's base URL; the app picks production or sandbox. `appID`, sent as
+`X-Feedback-App`, defaults to `Bundle.main.bundleIdentifier`. Forward your app's haptics preference as
+`hapticsEnabled`.
+
+For Report a Problem, change the title and prompt and pass what happened as `context`, up to 10 lines
+of 500 characters:
+
+```swift
+FeedbackView(
+    serviceURL: feedbackURL,
+    strings: feedbackText,
+    title: .problemTitle,
+    prompt: .problemPrompt,
+    context: ["Action: Couldn’t Save Card", "Error: card.save"],
+    onDismiss: { report = nil })
+```
+
+`title` is `.feedbackTitle` or `.problemTitle`. `prompt` is `.feedbackPrompt`, `.problemPrompt`, or
+`.contentPrompt` for a report about one piece of content.
+
+`onDismiss` runs when the person closes an empty form, confirms Discard Changes, or 1.5 seconds after a
+successful send. On iOS a swipe-down closes an empty sheet without calling it; with a draft, the swipe
+asks to discard first. On macOS the form is 480 points wide, Esc is Cancel, Send is the default button, and
+in a window its title comes from `title`. UI tests can find the form by the accessibility identifier
+`feedback.form`.
+
+### The copy
+
+The kit ships no strings. `strings` returns your app's text for every `FeedbackString`, so the form
+localizes with the rest of your app. An exhaustive `switch` makes the compiler flag any case you miss,
+including cases a later release adds. This English copy is a starting point:
+
+```swift
+import FeedbackKit
+
+func feedbackText(_ string: FeedbackString) -> String {
+    switch string {
+    case .feedbackTitle: String(localized: "Send Feedback")
+    case .problemTitle: String(localized: "Report a Problem")
+    case .feedbackPrompt: String(localized: "Request a feature or describe a problem")
+    case .problemPrompt: String(localized: "What happened?")
+    case .contentPrompt: String(localized: "What’s wrong with this card?")
+    case .messageLabel: String(localized: "Message")
+    case .diagnosticsFooter:
+        String(localized: "Your app version, system version, device model and language are sent with your message.")
+    case .thanks: String(localized: "Thanks! Your feedback was sent.")
+    case .unsupported: String(localized: "This device can’t send feedback.")
+    case .emailLabel: String(localized: "Email")
+    case .emailPlaceholder: String(localized: "Email (Optional)")
+    case .emailFooter: String(localized: "Add your email if you’d like a reply.")
+    case .emailInvalid: String(localized: "Enter a full email address, like name@example.com.")
+    case .send: String(localized: "Send")
+    case .cancel: String(localized: "Cancel")
+    case .complete: String(localized: "Complete")
+    case .failedTitle: String(localized: "Couldn’t Send Feedback")
+    case .failedMessage: String(localized: "Something went wrong. Try again in a moment.")
+    case .offlineMessage: String(localized: "You’re offline. Connect to the internet, then try again.")
+    case .tryAgain: String(localized: "Try Again")
+    case .ok: String(localized: "OK")
+    case .discardTitle: String(localized: "Discard Changes?")
+    case .discardMessage: String(localized: "Your changes won’t be saved.")
+    case .discard: String(localized: "Discard Changes")
+    case .keepEditing: String(localized: "Keep Editing")
+    }
+}
+```
+
+`.messageLabel` and `.emailLabel` are the fields' VoiceOver labels; `.complete` labels the checkmark.
+`.unsupported` is the footer, and the alert message, on a device that can't send.
+
+### Previews, demos and UI tests
+
+App Attest is not available in the Simulator, so there the form shows `.unsupported`. To drive it
+anyway, pass your own `FeedbackSender` instead of a URL:
+
+```swift
+struct PreviewSender: FeedbackSender {
+    var isSupported: Bool { true }
+
+    func send(_: FeedbackSubmission) async throws(FeedbackError) {}
+}
+
+FeedbackView(sender: PreviewSender(), strings: feedbackText, onDismiss: {})
+```
+
+Throw `.offline` or `.failed` to show the failure alert with Try Again, or `.unsupported` for the
+cannot-send state. The demo app in `Demo/` does this with a picker.
+
+## Behavior
+
+- Send is enabled whenever the trimmed message is non-empty, up to 5,000 characters.
+- The email address is optional. Its error appears when the field loses focus or Send is tapped with an
+  incomplete address, and clears as soon as the address is complete. Send with an incomplete address
+  shows the error, plays the error haptic and sends nothing.
+- On iOS the Discard Changes confirmation comes from the close button, and a swipe-down on a draft asks
+  too. On macOS it comes from Cancel.
+- A failed send keeps the draft and offers Try Again. Being offline has its own message.
+- A device without App Attest, or one whose App Attest keeps failing, says it can't send feedback and
+  disables Send.
+
+## The wire contract
+
+The kit implements the feedback service's wire contract v1, documented in the service's README. In
+short, for each send:
+
+1. Every request carries `X-Feedback-App`, `X-Feedback-App-Transaction`
+   (`AppTransaction.shared.jwsRepresentation`) and an `Idempotency-Key`.
+2. Without a registered key, the kit generates an App Attest key, asks
+   `POST /v1/app-attest/challenges` for a `registerKey` challenge, attests the key with the 32
+   challenge bytes as the client data hash, and registers it with `POST /v1/app-attest/keys`.
+3. It asks for a `submit` challenge bound to the SHA-256 of the exact body, builds the `HKF1` client
+   data (the challenge, `POST`, `/v1/feedback`, the body's SHA-256, the `Idempotency-Key`, the
+   AppTransaction's SHA-256 and the raw key ID, each with a 4-byte big-endian length), and sends
+   `POST /v1/feedback` with the key ID, the challenge ID and the assertion over SHA-256 of that client
+   data.
+
+Binary values are base64url without padding. Recovery follows the contract:
+
+- `428` with `app-attest-key-unregistered` registers the key again and resends, once.
+- `401` with `app-attest-registration-challenge-rejected` asks for a new registration challenge, once.
+- When DeviceCheck says a key is invalid, the kit generates one new key. A second invalid key means the
+  device can't send.
+- DeviceCheck's `serverUnavailable` is retried once after 2 seconds.
+- A retry of the same message after a lost connection or a `5xx` reuses its `Idempotency-Key`, so the
+  service can recognize it. Anything else starts a new one.
+- `400`, `401`, `429` and `5xx` show the failure alert. No connection, a lost connection or a timeout
+  shows the offline message.
+
+## Privacy
+
+- The service receives the message, the email address if one was entered, the app version and build,
+  the system name and version, the hardware model identifier (`iPhone17,2`, `Mac15,3`;
+  `SIMULATOR_MODEL_IDENTIFIER` in the Simulator), the language code (`sv`, not the region), any
+  `context` lines, and the AppTransaction and App Attest proofs. The form's footer names every
+  diagnostic it sends.
+- The App Attest key never leaves the Secure Enclave. Its identifier and whether it is registered are
+  kept in `UserDefaults.standard` under `<bundle ID>.feedbackKit.appAttestKeyID` and
+  `<bundle ID>.feedbackKit.appAttestKeyRegistered`. A key restored from a backup onto another device is
+  invalid there and is replaced on the next send.
+- The kit logs to the app's own subsystem only when a send fails, with the HTTP status or the error
+  domain and code. It never logs the message, the email address, JWS values, assertions or key IDs.
+- For the App Store privacy label, feedback usually maps to User Content (Customer Support), Contact
+  Info (Email Address, when one is given) and Diagnostics. The service also keeps an opaque per-install
+  hash it derives from the AppTransaction. None of it is used for tracking.
+
+## Accessibility
+
+The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. VoiceOver announces the email error and the thanks. The form is a system `Form`, so it
+follows Dynamic Type and light and dark mode. Reduce Motion swaps the button morph and footer changes
+instantly, keeps every haptic, and keeps the 1.5 second thank-you hold.
+
+## Local development
+
+```sh
+swift test
+```
+
+`swift test` builds for macOS only. Build iOS too when touching platform-conditional code:
+
+```sh
+xcodebuild -scheme FeedbackKit -destination 'generic/platform=iOS Simulator' build
+```
+
+The demo app lives in `Demo/FeedbackKitDemo.xcodeproj` and uses a fake sender that answers after two
+seconds. Launch arguments open the form straight away: `-demoSheet feedback` or `-demoSheet problem`,
+and `-demoOutcome success`, `failure`, `offline` or `unsupported`. The README media was captured from
+the iOS 27.2 Simulator (iPhone 17 Pro) with that demo.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
