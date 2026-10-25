@@ -1,6 +1,11 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
+/// A feedback form for a sheet on iOS, or a sheet or window on macOS.
+///
+/// The form owns its draft, the email check, the send and its failure alert, and Discard Changes. It calls
+/// `onDismiss` when the person closes an empty form, confirms Discard Changes, or 1.5 seconds after a
+/// successful send.
 public struct FeedbackView: View {
     let strings: (FeedbackString) -> String
     let title: FeedbackString
@@ -17,6 +22,17 @@ public struct FeedbackView: View {
         case email
     }
 
+    /// Creates a form that sends to the HK Softworks feedback service.
+    ///
+    /// - Parameters:
+    ///   - serviceURL: The service's base URL, production or sandbox.
+    ///   - appID: The bundle ID the service knows the app by. Defaults to the main bundle's.
+    ///   - strings: The app's text for every ``FeedbackString``.
+    ///   - title: `.feedbackTitle` or `.problemTitle`.
+    ///   - prompt: `.feedbackPrompt`, `.problemPrompt` or `.contentPrompt`.
+    ///   - context: Lines sent with the message, such as what failed. Up to 10 lines of 500 characters.
+    ///   - hapticsEnabled: The app's haptics preference.
+    ///   - onDismiss: Closes the form.
     public init(
         serviceURL: URL,
         appID: String = Bundle.main.bundleIdentifier ?? "",
@@ -37,6 +53,7 @@ public struct FeedbackView: View {
             onDismiss: onDismiss)
     }
 
+    /// Creates a form that sends through `sender`: your own backend, or a fake for previews and UI tests.
     public init(
         sender: some FeedbackSender,
         strings: @escaping (FeedbackString) -> String,

@@ -2,12 +2,15 @@
 
 [![CI](https://github.com/hksw-io/feedbackkit/actions/workflows/ci.yml/badge.svg)](https://github.com/hksw-io/feedbackkit/actions/workflows/ci.yml)
 
-A reusable SwiftUI feedback form for iOS and macOS apps in the HK Softworks portfolio. It replaces
-Mail: the message goes straight to the shared HK Softworks feedback service, signed with App Attest
-and the app's AppTransaction, so the service only accepts it from a genuine copy of the app.
+A SwiftUI feedback form for iOS and macOS that replaces Mail. People write a message, optionally add
+an email address, and tap Send; the form shows the send, says thanks, and closes.
 
-The kit owns the form, the diagnostics, the App Attest key and the whole request flow. The app passes
-the service URL and its copy. No dependencies.
+HK Softworks apps send straight to the shared HK Softworks feedback service, signed with App Attest
+and the app's AppTransaction, so the service only accepts feedback from a genuine copy of the app. The
+service is private, so any other app sends to its own backend through a `FeedbackSender`.
+
+The kit owns the form, the diagnostics and the request flow. The app passes its copy and where to send.
+No dependencies.
 
 ## Preview
 
@@ -42,11 +45,14 @@ The same states in dark mode.
 
 - iOS 26+ / macOS 26+
 - Swift 6.2+
+
+To send to the HK Softworks feedback service, also:
+
 - The App Attest capability (`com.apple.developer.devicecheck.appattest-environment`, `production` for
   TestFlight and the App Store)
 - The app's bundle ID and App Apple ID in the feedback service's app list
 
-Devices without App Attest can't send feedback, and there is no Mail fallback: the form says so
+Devices without App Attest can't send to the service, and there is no Mail fallback: the form says so
 plainly and disables Send.
 
 ## Installation
@@ -59,7 +65,8 @@ Or in Xcode: **File > Add Package Dependencies**, enter the URL above, and choos
 
 ## Usage
 
-Present `FeedbackView` in a sheet on iOS, and in a sheet or a window on macOS:
+Present `FeedbackView` in a sheet on iOS, and in a sheet or a window on macOS. With the HK Softworks
+feedback service:
 
 ```swift
 import FeedbackKit
@@ -143,10 +150,49 @@ func feedbackText(_ string: FeedbackString) -> String {
 `.messageLabel` and `.emailLabel` are the fields' VoiceOver labels; `.complete` labels the checkmark.
 `.unsupported` is the footer, and the alert message, on a device that can't send.
 
+### Your own backend
+
+Pass a `FeedbackSender` instead of a service URL, and the form sends through it. `FeedbackSubmission`
+is `Encodable`, so posting it as JSON takes a few lines:
+
+```swift
+struct BackendSender: FeedbackSender {
+    let endpoint: URL
+
+    var isSupported: Bool { true }
+
+    func send(_ submission: FeedbackSubmission) async throws(FeedbackError) {
+        var request = URLRequest(url: self.endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        do {
+            request.httpBody = try JSONEncoder().encode(submission)
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let status = (response as? HTTPURLResponse)?.statusCode, (200 ..< 300).contains(status) else {
+                throw FeedbackError.failed
+            }
+        } catch let error as URLError where error.code == .notConnectedToInternet {
+            throw .offline
+        } catch {
+            throw .failed
+        }
+    }
+}
+
+FeedbackView(
+    sender: BackendSender(endpoint: URL(string: "https://example.com/feedback")!),
+    strings: feedbackText,
+    onDismiss: { showsFeedback = false })
+```
+
+Throw `.offline` or `.failed` to show the failure alert with Try Again, or `.unsupported` for the
+cannot-send state. The body is the same JSON the HK Softworks service takes: `message`, `email` (left out
+when empty), `appVersion`, `system`, `device`, `language` and `context`.
+
 ### Previews, demos and UI tests
 
-App Attest is not available in the Simulator, so there the form shows `.unsupported`. To drive it
-anyway, pass your own `FeedbackSender` instead of a URL:
+App Attest is not available in the Simulator, so there the service-backed form shows `.unsupported`.
+To drive it anyway, pass a fake sender:
 
 ```swift
 struct PreviewSender: FeedbackSender {
@@ -158,8 +204,7 @@ struct PreviewSender: FeedbackSender {
 FeedbackView(sender: PreviewSender(), strings: feedbackText, onDismiss: {})
 ```
 
-Throw `.offline` or `.failed` to show the failure alert with Try Again, or `.unsupported` for the
-cannot-send state. The demo app in `Demo/` does this with a picker.
+The demo app in `Demo/` does this with a picker for each outcome.
 
 ## Behavior
 
@@ -173,10 +218,10 @@ cannot-send state. The demo app in `Demo/` does this with a picker.
 - A device without App Attest, or one whose App Attest keeps failing, says it can't send feedback and
   disables Send.
 
-## The wire contract
+## The HK Softworks feedback service
 
-The kit implements the feedback service's wire contract v1, documented in the service's README. In
-short, for each send:
+With a service URL, the kit implements wire contract v1 of the HK Softworks feedback service. The
+service isn't open source; this summary is for reviewing what the kit sends. For each send:
 
 1. Every request carries `X-Feedback-App`, `X-Feedback-App-Transaction`
    (`AppTransaction.shared.jwsRepresentation`) and an `Idempotency-Key`.
@@ -203,7 +248,7 @@ Binary values are base64url without padding. Recovery follows the contract:
 
 ## Privacy
 
-- The service receives the message, the email address if one was entered, the app version and build,
+- With the HK Softworks service, the service receives the message, the email address if one was entered, the app version and build,
   the system name and version, the hardware model identifier (`iPhone17,2`, `Mac15,3`;
   `SIMULATOR_MODEL_IDENTIFIER` in the Simulator), the language code (`sv`, not the region), any
   `context` lines, and the AppTransaction and App Attest proofs. The form's footer names every

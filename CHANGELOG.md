@@ -6,6 +6,12 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-25
+
+### Changed
+
+- The README shows how to send to your own backend with a `FeedbackSender`, and the public API has documentation comments.
+
 ## [1.0.0] - 2026-10-25
 
 ### Added
