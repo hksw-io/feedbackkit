@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Xcode ${{ matrix.xcode }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            xcode: '26.6'
+            runtime: '26'
+          # https://github.com/actions/runner-images/issues/14404
+          - runner: xcode-27
+            xcode: '27.0'
+            runtime: '27'
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Test macOS
+        run: swift test
+      - name: Test iOS Simulator
+        env:
+          RUNTIME_MAJOR: ${{ matrix.runtime }}
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c '
+          import json, os, sys
+          devices = json.load(sys.stdin)["devices"]
+          major = os.environ["RUNTIME_MAJOR"]
+          print(next(d["udid"] for runtime, group in devices.items()
+                     if f"iOS-{major}-" in runtime
+                     for d in group if "iPhone" in d["name"]))')
+          xcodebuild test -scheme FeedbackKit -destination "platform=iOS Simulator,id=$device" -quiet CODE_SIGNING_ALLOWED=NO
+      - name: Build the demo app
+        run: xcodebuild build -project Demo/FeedbackKitDemo.xcodeproj -scheme FeedbackKitDemo -destination 'generic/platform=iOS Simulator' -quiet CODE_SIGNING_ALLOWED=NO
