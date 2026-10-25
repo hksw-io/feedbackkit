@@ -80,9 +80,9 @@ import SwiftUI
 }
 ```
 
-`serviceURL` is the service's base URL; the app picks production or sandbox. `appID`, sent as
-`X-Feedback-App`, defaults to `Bundle.main.bundleIdentifier`. Forward your app's haptics preference as
-`hapticsEnabled`.
+`serviceURL` is the service's base URL, the same for App Store, TestFlight and development builds.
+`appID`, sent as `X-Feedback-App`, defaults to `Bundle.main.bundleIdentifier`. Forward your app's
+haptics preference as `hapticsEnabled`.
 
 For Report a Problem, change the title and prompt and pass what happened as `context`, up to 10 lines
 of 500 characters:
