@@ -69,7 +69,7 @@ struct FeedbackThanksView: View {
         ZStack {
             Circle()
                 .fill(RadialGradient(
-                    colors: [Color.accentColor.opacity(0.35), Color.accentColor.opacity(0.12), .clear],
+                    colors: [Color.accentColor.opacity(0.16), Color.accentColor.opacity(0.05), .clear],
                     center: .center,
                     startRadius: 0,
                     endRadius: Self.iconSize * 1.35))
@@ -83,10 +83,10 @@ struct FeedbackThanksView: View {
                 .frame(width: Self.iconSize, height: Self.iconSize)
                 .clipShape(.rect(cornerRadius: Self.iconSize * 0.23, style: .continuous))
                 .shadow(
-                    color: Color.accentColor.opacity(0.3),
-                    radius: Self.iconSize * 0.25,
+                    color: .black.opacity(0.15),
+                    radius: Self.iconSize * 0.14,
                     x: 0,
-                    y: Self.iconSize * 0.09)
+                    y: Self.iconSize * 0.06)
         }
         .scaleEffect(self.pulse)
         .scaleEffect(self.pop)

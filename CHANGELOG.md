@@ -6,6 +6,12 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-10-31
+
+### Changed
+
+- The thank-you screen's glow behind the icon is about half as strong, and the icon's shadow is a soft neutral one rather than tinted.
+
 ## [2.0.0] - 2026-10-31
 
 ### Changed
