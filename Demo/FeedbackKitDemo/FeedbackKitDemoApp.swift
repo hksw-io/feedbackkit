@@ -46,6 +46,7 @@ struct DemoView: View {
         .sheet(item: self.$sheet) { sheet in
             FeedbackView(
                 sender: DemoSender(outcome: self.outcome),
+                icon: Image(systemName: "bubble.left.and.text.bubble.right.fill"),
                 strings: feedbackText,
                 title: sheet == .feedback ? .feedbackTitle : .problemTitle,
                 prompt: sheet == .feedback ? .feedbackPrompt : .problemPrompt,
@@ -94,7 +95,9 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .messageLabel: String(localized: "Message")
     case .diagnosticsFooter:
         String(localized: "Your app version, system version, device model and language are sent with your message.")
-    case .thanks: String(localized: "Thanks! Your feedback was sent.")
+    case .thanks: String(localized: "Thanks for Your Feedback")
+    case .thanksRead: String(localized: "We read all feedback.")
+    case .thanksMayReply: String(localized: "We read all feedback, but we may not be able to reply to every message.")
     case .unsupported: String(localized: "This device can’t send feedback.")
     case .emailLabel: String(localized: "Email")
     case .emailPlaceholder: String(localized: "Email (Optional)")

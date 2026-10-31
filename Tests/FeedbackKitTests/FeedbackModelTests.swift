@@ -80,9 +80,10 @@ struct FeedbackModelTests {
         ])
         #expect(!model.isSending)
         #expect(model.didSucceed)
-        #expect(model.messageFooter == .thanks)
+        #expect(model.isThanking)
+        #expect(model.thanksDetail == .thanksMayReply)
         #expect(!model.isDiscardConfirmationPresented)
-        #expect(self.sleeps.durations == [.milliseconds(1500)])
+        #expect(self.sleeps.durations == [FeedbackModel.thanksLead, FeedbackModel.thanksDwell])
         #expect(model.shouldDismiss)
     }
 
@@ -94,7 +95,38 @@ struct FeedbackModelTests {
 
         #expect(self.sender.sent.first?.email == nil)
         #expect(self.sender.sent.first?.context == [])
-        #expect(model.messageFooter == .thanks)
+        #expect(model.thanksDetail == .thanksRead, "no address, so nothing about replies")
+    }
+
+    @Test
+    func `the thanks only mentions a reply when an address that will be sent was left`() {
+        #expect(self.makeModel(message: "Hi", email: "   ").thanksDetail == .thanksRead)
+        #expect(self.makeModel(message: "Hi", email: "a@b.co").thanksDetail == .thanksMayReply)
+    }
+
+    @Test(arguments: [
+        (FeedbackModel.thanksLead, false),
+        (FeedbackModel.thanksDwell, true),
+    ])
+    func `the thank-you screen can be closed early, but not the moment before it`(
+        stoppedAt: Duration,
+        closes: Bool) async
+    {
+        let model = FeedbackModel(sender: self.sender, context: [], diagnostics: Self.diagnostics) { duration in
+            if duration == stoppedAt {
+                throw CancellationError()
+            }
+        }
+        model.messageChanged("Hi")
+
+        await model.sendTapped()
+        #expect(model.didSucceed)
+        #expect(model.isThanking == closes)
+        #expect(!model.shouldDismiss)
+
+        model.cancelTapped()
+        #expect(model.shouldDismiss == closes)
+        #expect(!model.isDiscardConfirmationPresented)
     }
 
     @Test(arguments: ["", "  \n "] as [String])

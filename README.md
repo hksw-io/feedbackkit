@@ -21,12 +21,13 @@ No dependencies.
 </p>
 <p>
   <img src="Docs/Media/feedbackkit-iphone-light-sending.jpg" width="200" alt="While sending, the Send button shows a spinner.">
-  <img src="Docs/Media/feedbackkit-iphone-light-thanks.jpg" width="200" alt="After sending, the Send button shows a checkmark and the footer reads Thanks! Your feedback was sent.">
+  <img src="Docs/Media/feedbackkit-iphone-light-thanks.jpg" width="200" alt="After sending, a thank-you screen: the app icon over a soft coloured backdrop, Thanks for Your Feedback, and We read all feedback, but we may not be able to reply to every message.">
   <img src="Docs/Media/feedbackkit-iphone-light-failed.jpg" width="200" alt="A failed send: the alert Couldn’t Send Feedback, Something went wrong. Try again in a moment., with Cancel and Try Again.">
 </p>
 
 Empty, typed, an incomplete email address, sending, sent, and a failed send. Send morphs to a spinner
-and then a checkmark, and the form holds the thanks for 1.5 seconds before it closes.
+and then a checkmark, and the form fades to a thank-you screen with your app icon, which closes by itself
+after about 5 seconds or when tapped.
 
 <p>
   <img src="Docs/Media/feedbackkit-iphone-dark-empty.jpg" width="200" alt="The empty form in dark mode.">
@@ -35,7 +36,7 @@ and then a checkmark, and the form holds the thanks for 1.5 seconds before it cl
 </p>
 <p>
   <img src="Docs/Media/feedbackkit-iphone-dark-sending.jpg" width="200" alt="Sending in dark mode.">
-  <img src="Docs/Media/feedbackkit-iphone-dark-thanks.jpg" width="200" alt="Sent in dark mode.">
+  <img src="Docs/Media/feedbackkit-iphone-dark-thanks.jpg" width="200" alt="The thank-you screen in dark mode.">
   <img src="Docs/Media/feedbackkit-iphone-dark-failed.jpg" width="200" alt="The failure alert in dark mode.">
 </p>
 
@@ -75,6 +76,7 @@ import SwiftUI
 .sheet(isPresented: $showsFeedback) {
     FeedbackView(
         serviceURL: URL(string: "https://feedback.example.com")!,
+        icon: Image("AppIconImage"),
         strings: feedbackText,
         onDismiss: { showsFeedback = false })
 }
@@ -90,6 +92,7 @@ of 500 characters:
 ```swift
 FeedbackView(
     serviceURL: feedbackURL,
+    icon: Image("AppIconImage"),
     strings: feedbackText,
     title: .problemTitle,
     prompt: .problemPrompt,
@@ -100,8 +103,8 @@ FeedbackView(
 `title` is `.feedbackTitle` or `.problemTitle`. `prompt` is `.feedbackPrompt`, `.problemPrompt`, or
 `.contentPrompt` for a report about one piece of content.
 
-`onDismiss` runs when the person closes an empty form, confirms Discard Changes, or 1.5 seconds after a
-successful send. On iOS a swipe-down closes an empty sheet without calling it; with a draft, the swipe
+`onDismiss` runs when the person closes an empty form, confirms Discard Changes, or when the thank-you
+screen after a successful send ends: after about 5 seconds, or sooner if the person taps it. On iOS a swipe-down closes an empty sheet without calling it; with a draft, the swipe
 asks to discard first. On macOS the form is 480 points wide, Esc is Cancel, Send is the default button, and
 in a window its title comes from `title`. UI tests can find the form by the accessibility identifier
 `feedback.form`.
@@ -125,7 +128,9 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .messageLabel: String(localized: "Message")
     case .diagnosticsFooter:
         String(localized: "Your app version, system version, device model and language are sent with your message.")
-    case .thanks: String(localized: "Thanks! Your feedback was sent.")
+    case .thanks: String(localized: "Thanks for Your Feedback")
+    case .thanksRead: String(localized: "We read all feedback.")
+    case .thanksMayReply: String(localized: "We read all feedback, but we may not be able to reply to every message.")
     case .unsupported: String(localized: "This device can’t send feedback.")
     case .emailLabel: String(localized: "Email")
     case .emailPlaceholder: String(localized: "Email (Optional)")
@@ -148,6 +153,8 @@ func feedbackText(_ string: FeedbackString) -> String {
 ```
 
 `.messageLabel` and `.emailLabel` are the fields' VoiceOver labels; `.complete` labels the checkmark.
+`.thanks` heads the thank-you screen, over `.thanksRead` when the person left no address, or `.thanksMayReply`
+when they did, so nobody who can't get a reply is told about replies.
 `.unsupported` is the footer, and the alert message, on a device that can't send.
 
 ### Your own backend
@@ -181,6 +188,7 @@ struct BackendSender: FeedbackSender {
 
 FeedbackView(
     sender: BackendSender(endpoint: URL(string: "https://example.com/feedback")!),
+    icon: Image("AppIconImage"),
     strings: feedbackText,
     onDismiss: { showsFeedback = false })
 ```
@@ -201,7 +209,7 @@ struct PreviewSender: FeedbackSender {
     func send(_: FeedbackSubmission) async throws(FeedbackError) {}
 }
 
-FeedbackView(sender: PreviewSender(), strings: feedbackText, onDismiss: {})
+FeedbackView(sender: PreviewSender(), icon: Image("AppIconImage"), strings: feedbackText, onDismiss: {})
 ```
 
 The demo app in `Demo/` does this with a picker for each outcome.
@@ -267,7 +275,7 @@ Binary values are base64url without padding. Recovery follows the contract:
 
 The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. VoiceOver announces the email error and the thanks. The form is a system `Form`, so it
 follows Dynamic Type and light and dark mode. Reduce Motion swaps the button morph and footer changes
-instantly, keeps every haptic, and keeps the 1.5 second thank-you hold.
+instantly, keeps every haptic, and keeps the thank-you screen's time on screen.
 
 ## Local development
 

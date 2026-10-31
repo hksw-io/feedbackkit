@@ -10,7 +10,10 @@ final class FeedbackModel {
     static let maximumFieldLength = 100
     static let maximumContextLines = 10
     static let maximumContextLineLength = 500
-    static let thanksHold: Duration = .milliseconds(1500)
+    /// Long enough to see the Send button's checkmark before the form gives way to the thank-you screen.
+    nonisolated static let thanksLead: Duration = .milliseconds(600)
+    /// Long enough to read the thank-you screen, which takes a little over a second to land.
+    nonisolated static let thanksDwell: Duration = .milliseconds(4500)
 
     @ObservationIgnored let sender: any FeedbackSender
     @ObservationIgnored let context: [String]
@@ -23,6 +26,7 @@ final class FeedbackModel {
     private(set) var emailErrorCount = 0
     private(set) var isSending = false
     private(set) var didSucceed = false
+    private(set) var isThanking = false
     private(set) var isUnsupported: Bool
     private(set) var shouldDismiss = false
     var alert: FeedbackError?
@@ -64,13 +68,12 @@ final class FeedbackModel {
     }
 
     var messageFooter: FeedbackString {
-        if self.didSucceed {
-            .thanks
-        } else if self.isUnsupported {
-            .unsupported
-        } else {
-            .diagnosticsFooter
-        }
+        self.isUnsupported ? .unsupported : .diagnosticsFooter
+    }
+
+    /// A reply is only worth mentioning to someone who left an address to reply to.
+    var thanksDetail: FeedbackString {
+        self.trimmedEmail.isEmpty ? .thanksRead : .thanksMayReply
     }
 
     var emailFooter: FeedbackString {
@@ -128,8 +131,11 @@ final class FeedbackModel {
     }
 
     func cancelTapped() {
-        guard !self.isSending, !self.didSucceed else { return }
-        if self.hasDraft {
+        guard !self.isSending else { return }
+        if self.didSucceed {
+            // the thank-you screen closes early; the moment before it stays, as its text is on the way
+            self.shouldDismiss = self.isThanking
+        } else if self.hasDraft {
             self.isDiscardConfirmationPresented = true
         } else {
             self.shouldDismiss = true
@@ -172,7 +178,9 @@ final class FeedbackModel {
         self.isSending = false
         self.didSucceed = true
         do {
-            try await self.sleep(Self.thanksHold)
+            try await self.sleep(Self.thanksLead)
+            self.isThanking = true
+            try await self.sleep(Self.thanksDwell)
         } catch {
             return
         }

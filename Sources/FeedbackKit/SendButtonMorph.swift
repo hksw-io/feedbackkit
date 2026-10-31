@@ -8,6 +8,21 @@ enum Tokens {
         static let saveMorph: Animation = .smooth(duration: 0.24)
         static let controlMorph: Animation = .smooth(duration: 0.22)
         static let felt: Animation = .spring(duration: 0.32, bounce: 0.16)
+        static let thanksFade: Animation = .smooth(duration: 0.55)
+        static let thanksIconSettle: Animation = .smooth(duration: 0.68)
+        static let thanksTitleLand: Animation = .smooth(duration: 0.8).delay(0.35)
+        static let thanksDetailLand: Animation = .smooth(duration: 0.8).delay(0.5)
+        static let thanksSheen: Animation = .easeInOut(duration: 0.8)
+        static let thanksBreath: Animation = .easeInOut(duration: 3.5)
+        static let thanksDrift: Animation = .easeInOut(duration: 8)
+    }
+
+    enum Colors {
+        #if os(iOS)
+            static let background = Color(.systemBackground)
+        #else
+            static let background = Color(nsColor: .windowBackgroundColor)
+        #endif
     }
 }
 

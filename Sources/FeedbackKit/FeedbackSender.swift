@@ -46,7 +46,8 @@ public enum FeedbackError: Error, Equatable, Sendable {
 
 /// Every piece of copy in the form. The kit ships no strings: the app returns its own localized text for each
 /// case through the `strings` closure. `.messageLabel` and `.emailLabel` are VoiceOver labels, and `.complete`
-/// labels the checkmark after a send.
+/// labels the checkmark after a send. `.thanks` heads the thank-you screen, over `.thanksRead` when the person left
+/// no address, or `.thanksMayReply` when they did.
 public enum FeedbackString: Hashable, Sendable {
     case feedbackTitle
     case problemTitle
@@ -56,6 +57,8 @@ public enum FeedbackString: Hashable, Sendable {
     case messageLabel
     case diagnosticsFooter
     case thanks
+    case thanksRead
+    case thanksMayReply
     case unsupported
     case emailLabel
     case emailPlaceholder

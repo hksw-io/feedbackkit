@@ -14,7 +14,7 @@ Instructions for agents working in this repository. RFC 2119 keywords apply.
 - Use SwiftUI. The one UIKit piece is `SheetDismissalGuard`, which turns a swipe-down on a draft into the discard confirmation; keep it.
 - Do not use deprecated APIs such as `foregroundColor`, old `alert` overloads, or `animation(_:)` without `value:`.
 - Preserve accessibility in every UI change: VoiceOver labels and announcements, Dynamic Type, Reduce Motion, contrast, and light and dark mode.
-- Read Reduce Motion in every view that animates. Reduce Motion turns the button morph and footer changes into instant swaps, keeps every haptic, and keeps the 1.5 s thank-you hold.
+- Read Reduce Motion in every view that animates. Reduce Motion turns the button morph, footer changes and thank-you screen into instant swaps, keeps every haptic, and keeps the thank-you screen's time on screen.
 - Keep `.accessibilityIdentifier("feedback.form")`. Consumers' UI tests find the form by it.
 - Keep public API names, defaults, and initializer behavior stable unless the requested change explicitly requires a breaking change.
 

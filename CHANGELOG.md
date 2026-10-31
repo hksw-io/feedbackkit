@@ -6,6 +6,15 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-31
+
+### Changed
+
+- **Breaking:** a successful send now ends on a thank-you screen, in the manner of PaywallKit's: the form fades to the app icon over a drifting backdrop, then the thanks land under it. It stays about 5 seconds, or until tapped, in place of the 1.5 s hold and footer line.
+- **Breaking:** `FeedbackView`'s initializers take the `icon` the screen shows.
+- **Breaking:** `FeedbackString` has `.thanksRead`, for someone who left no address, and `.thanksMayReply`, for someone who did. `.thanks` is now the screen's title rather than a footer line, so give it copy to match.
+- On iOS the email field no longer turns autocorrection off, which took the keyboard's suggestion bar and AutoFill's address with it.
+
 ## [1.0.1] - 2026-10-25
 
 ### Changed

@@ -4,9 +4,10 @@ import SwiftUI
 /// A feedback form for a sheet on iOS, or a sheet or window on macOS.
 ///
 /// The form owns its draft, the email check, the send and its failure alert, and Discard Changes. It calls
-/// `onDismiss` when the person closes an empty form, confirms Discard Changes, or 1.5 seconds after a
-/// successful send.
+/// `onDismiss` when the person closes an empty form, confirms Discard Changes, or when the thank-you screen
+/// after a successful send ends, which it does after 5 seconds or when the person taps it.
 public struct FeedbackView: View {
+    let icon: Image
     let strings: (FeedbackString) -> String
     let title: FeedbackString
     let prompt: FeedbackString
@@ -27,6 +28,7 @@ public struct FeedbackView: View {
     /// - Parameters:
     ///   - serviceURL: The service's base URL, production or sandbox.
     ///   - appID: The bundle ID the service knows the app by. Defaults to the main bundle's.
+    ///   - icon: The app icon, shown on the thank-you screen.
     ///   - strings: The app's text for every ``FeedbackString``.
     ///   - title: `.feedbackTitle` or `.problemTitle`.
     ///   - prompt: `.feedbackPrompt`, `.problemPrompt` or `.contentPrompt`.
@@ -36,6 +38,7 @@ public struct FeedbackView: View {
     public init(
         serviceURL: URL,
         appID: String = Bundle.main.bundleIdentifier ?? "",
+        icon: Image,
         strings: @escaping (FeedbackString) -> String,
         title: FeedbackString = .feedbackTitle,
         prompt: FeedbackString = .feedbackPrompt,
@@ -45,6 +48,7 @@ public struct FeedbackView: View {
     {
         self.init(
             sender: FeedbackClient(serviceURL: serviceURL, appID: appID),
+            icon: icon,
             strings: strings,
             title: title,
             prompt: prompt,
@@ -56,6 +60,7 @@ public struct FeedbackView: View {
     /// Creates a form that sends through `sender`: your own backend, or a fake for previews and UI tests.
     public init(
         sender: some FeedbackSender,
+        icon: Image,
         strings: @escaping (FeedbackString) -> String,
         title: FeedbackString = .feedbackTitle,
         prompt: FeedbackString = .feedbackPrompt,
@@ -64,6 +69,7 @@ public struct FeedbackView: View {
         onDismiss: @escaping () -> Void)
     {
         self._model = State(initialValue: FeedbackModel(sender: sender, context: context))
+        self.icon = icon
         self.strings = strings
         self.title = title
         self.prompt = prompt
@@ -73,6 +79,8 @@ public struct FeedbackView: View {
 
     public var body: some View {
         self.form
+            .accessibilityHidden(self.model.isThanking)
+            .overlay { self.thanksOverlay }
             .accessibilityIdentifier("feedback.form")
             .alert(
                 self.strings(.failedTitle),
@@ -107,7 +115,7 @@ public struct FeedbackView: View {
             }
             .onChange(of: self.model.didSucceed) { _, didSucceed in
                 if didSucceed {
-                    AccessibilityNotification.Announcement(self.strings(.thanks)).post()
+                    self.focusedField = nil
                 }
             }
             .onChange(of: self.focusedField) { oldField, _ in
@@ -194,6 +202,20 @@ public struct FeedbackView: View {
         }
     #endif
 
+    private var thanksOverlay: some View {
+        ZStack {
+            if self.model.isThanking {
+                FeedbackThanksView(
+                    icon: self.icon,
+                    title: self.strings(.thanks),
+                    detail: self.strings(self.model.thanksDetail))
+                    .onTapGesture { self.model.cancelTapped() }
+                    .transition(.opacity)
+            }
+        }
+        .animation(self.reduceMotion ? nil : Tokens.Animations.thanksFade, value: self.model.isThanking)
+    }
+
     private var messageSection: some View {
         Section {
             TextField(
@@ -227,12 +249,15 @@ public struct FeedbackView: View {
                 prompt: Text(self.strings(.emailPlaceholder)))
                 .labelsHidden()
                 .textContentType(.emailAddress)
-                .autocorrectionDisabled(true)
             #if os(iOS)
+                // no .autocorrectionDisabled: it costs the keyboard's suggestion bar, and with it AutoFill's address.
+                // The email keyboard doesn't autocorrect on its own.
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .submitLabel(.send)
                 .onSubmit(self.send)
+            #else
+                .autocorrectionDisabled(true)
             #endif
                 .focused(self.$focusedField, equals: .email)
         } footer: {
