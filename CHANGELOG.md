@@ -6,25 +6,13 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
-## [2.0.2] - 2026-10-31
-
-### Removed
-
-- The thank-you screen's glow behind the icon. The icon keeps its soft neutral shadow.
-
-## [2.0.1] - 2026-10-31
+## [1.1.0] - 2026-10-31
 
 ### Changed
 
-- The thank-you screen's glow behind the icon is about half as strong, and the icon's shadow is a soft neutral one rather than tinted.
-
-## [2.0.0] - 2026-10-31
-
-### Changed
-
-- **Breaking:** a successful send now ends on a thank-you screen, in the manner of PaywallKit's: the form fades to the app icon over a drifting backdrop, then the thanks land under it. It stays about 5 seconds, or until tapped, in place of the 1.5 s hold and footer line.
-- **Breaking:** `FeedbackView`'s initializers take the `icon` the screen shows.
-- **Breaking:** `FeedbackString` has `.thanksRead`, for someone who left no address, and `.thanksMayReply`, for someone who did. `.thanks` is now the screen's title rather than a footer line, so give it copy to match.
+- A successful send now ends on a thank-you screen, in the manner of PaywallKit's: the form fades to the app icon over a drifting backdrop, then the thanks land under it. It stays about 5 seconds, or until tapped, in place of the 1.5 s hold and footer line.
+- `FeedbackView`'s initializers take the `icon` the screen shows. An app updating from 1.0 has to pass one.
+- `FeedbackString` has `.thanksRead`, for someone who left no address, and `.thanksMayReply`, for someone who did. An app updating from 1.0 has to add both to its `switch`. `.thanks` is now the screen's title rather than a footer line, so give it copy to match.
 - On iOS the email field no longer turns autocorrection off, which took the keyboard's suggestion bar and AutoFill's address with it.
 
 ## [1.0.1] - 2026-10-25

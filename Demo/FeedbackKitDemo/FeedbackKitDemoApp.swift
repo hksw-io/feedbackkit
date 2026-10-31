@@ -97,7 +97,7 @@ func feedbackText(_ string: FeedbackString) -> String {
         String(localized: "Your app version, system version, device model and language are sent with your message.")
     case .thanks: String(localized: "Thanks for Your Feedback")
     case .thanksRead: String(localized: "We read all feedback.")
-    case .thanksMayReply: String(localized: "We read all feedback, but we may not be able to reply to every message.")
+    case .thanksMayReply: String(localized: "We read all feedback and try to reply to every message.")
     case .unsupported: String(localized: "This device can’t send feedback.")
     case .emailLabel: String(localized: "Email")
     case .emailPlaceholder: String(localized: "Email (Optional)")

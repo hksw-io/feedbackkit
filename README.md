@@ -21,7 +21,7 @@ No dependencies.
 </p>
 <p>
   <img src="Docs/Media/feedbackkit-iphone-light-sending.jpg" width="200" alt="While sending, the Send button shows a spinner.">
-  <img src="Docs/Media/feedbackkit-iphone-light-thanks.jpg" width="200" alt="After sending, a thank-you screen: the app icon over a soft coloured backdrop, Thanks for Your Feedback, and We read all feedback, but we may not be able to reply to every message.">
+  <img src="Docs/Media/feedbackkit-iphone-light-thanks.jpg" width="200" alt="After sending, a thank-you screen: the app icon over a soft coloured backdrop, Thanks for Your Feedback, and We read all feedback and try to reply to every message.">
   <img src="Docs/Media/feedbackkit-iphone-light-failed.jpg" width="200" alt="A failed send: the alert Couldn’t Send Feedback, Something went wrong. Try again in a moment., with Cancel and Try Again.">
 </p>
 
@@ -59,7 +59,7 @@ plainly and disables Send.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/hksw-io/feedbackkit.git", from: "1.0.0")
+.package(url: "https://github.com/hksw-io/feedbackkit.git", from: "1.1.0")
 ```
 
 Or in Xcode: **File > Add Package Dependencies**, enter the URL above, and choose **Up to Next Major Version** from `1.0.0`.
@@ -130,7 +130,7 @@ func feedbackText(_ string: FeedbackString) -> String {
         String(localized: "Your app version, system version, device model and language are sent with your message.")
     case .thanks: String(localized: "Thanks for Your Feedback")
     case .thanksRead: String(localized: "We read all feedback.")
-    case .thanksMayReply: String(localized: "We read all feedback, but we may not be able to reply to every message.")
+    case .thanksMayReply: String(localized: "We read all feedback and try to reply to every message.")
     case .unsupported: String(localized: "This device can’t send feedback.")
     case .emailLabel: String(localized: "Email")
     case .emailPlaceholder: String(localized: "Email (Optional)")
