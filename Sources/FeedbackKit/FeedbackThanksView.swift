@@ -66,32 +66,20 @@ struct FeedbackThanksView: View {
     }
 
     private var hero: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(
-                    colors: [Color.accentColor.opacity(0.16), Color.accentColor.opacity(0.05), .clear],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: Self.iconSize * 1.35))
-                .frame(width: Self.iconSize * 2.7, height: Self.iconSize * 2.7)
-                .blur(radius: Self.iconSize * 0.22)
-                .frame(width: Self.iconSize, height: Self.iconSize)
-
-            self.icon
-                .resizable()
-                .scaledToFit()
-                .frame(width: Self.iconSize, height: Self.iconSize)
-                .clipShape(.rect(cornerRadius: Self.iconSize * 0.23, style: .continuous))
-                .shadow(
-                    color: .black.opacity(0.15),
-                    radius: Self.iconSize * 0.14,
-                    x: 0,
-                    y: Self.iconSize * 0.06)
-        }
-        .scaleEffect(self.pulse)
-        .scaleEffect(self.pop)
-        .offset(y: self.float)
-        .accessibilityHidden(true)
+        self.icon
+            .resizable()
+            .scaledToFit()
+            .frame(width: Self.iconSize, height: Self.iconSize)
+            .clipShape(.rect(cornerRadius: Self.iconSize * 0.23, style: .continuous))
+            .shadow(
+                color: .black.opacity(0.15),
+                radius: Self.iconSize * 0.14,
+                x: 0,
+                y: Self.iconSize * 0.06)
+            .scaleEffect(self.pulse)
+            .scaleEffect(self.pop)
+            .offset(y: self.float)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder
