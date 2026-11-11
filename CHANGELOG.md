@@ -6,6 +6,8 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-11
+
 ### Changed
 
 - **Breaking:** `FeedbackString` has `.messageTooLong`, the notice under a message of more than 5,000 characters. An app updating from 1.1 has to add it to its `switch`.
