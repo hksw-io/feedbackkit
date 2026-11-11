@@ -40,19 +40,6 @@ struct SendButtonMorph: View {
     let completeLabel: String
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var displayed: Phase
-    @State private var latestPhase: Phase
-    @State private var labelFadeDone = false
-
-    init(phase: Phase, title: String, image: Image?, workingLabel: String, completeLabel: String) {
-        self.phase = phase
-        self.title = title
-        self.image = image
-        self.workingLabel = workingLabel
-        self.completeLabel = completeLabel
-        self._displayed = State(initialValue: phase)
-        self._latestPhase = State(initialValue: phase)
-    }
 
     var body: some View {
         ZStack {
@@ -63,63 +50,31 @@ struct SendButtonMorph: View {
                     Text(self.title)
                 }
             }
-            .opacity(self.displayed == .idle ? 1 : 0)
-            .accessibilityHidden(self.displayed != .idle)
+            .opacity(self.phase == .idle ? 1 : 0)
+            .accessibilityHidden(self.phase != .idle)
 
             // a spinner inside a button has no label of its own
             ProgressView()
                 .controlSize(.small)
                 .accessibilityLabel(self.workingLabel)
-                .opacity(self.displayed == .working ? 1 : 0)
-                .accessibilityHidden(self.displayed != .working)
+                .opacity(self.phase == .working ? 1 : 0)
+                .accessibilityHidden(self.phase != .working)
 
             Image(systemName: "checkmark")
-                .symbolEffect(.drawOn, isActive: !self.reduceMotion && self.displayed != .success)
-                .opacity(self.displayed == .success ? 1 : 0)
+                .symbolEffect(.drawOn, isActive: !self.reduceMotion && self.phase != .success)
+                .opacity(self.phase == .success ? 1 : 0)
                 .accessibilityLabel(self.completeLabel)
-                .accessibilityHidden(self.displayed != .success)
+                .accessibilityHidden(self.phase != .success)
         }
-        .onChange(of: self.phase) { _, newPhase in
-            self.latestPhase = newPhase
-            self.advance(to: newPhase)
-        }
+        .animation(self.reduceMotion ? nil : self.animation, value: self.phase)
     }
 
-    private func advance(to newPhase: Phase) {
-        if self.reduceMotion {
-            self.labelFadeDone = newPhase != .idle
-            self.displayed = newPhase
-            return
-        }
-
-        switch (self.displayed, newPhase) {
-        case (.idle, .working), (.idle, .success):
-            withAnimation(Tokens.Animations.quickFade, completionCriteria: .removed) {
-                self.displayed = .working
-            } completion: {
-                self.labelFadeDone = true
-                guard self.latestPhase == .success, self.displayed == .working else { return }
-                withAnimation(Tokens.Animations.successPop) {
-                    self.displayed = .success
-                }
-            }
-
-        case (.working, .success):
-            guard self.labelFadeDone else { return }
-            withAnimation(Tokens.Animations.successPop) {
-                self.displayed = .success
-            }
-
-        case (_, .idle):
-            self.labelFadeDone = false
-            withAnimation(Tokens.Animations.saveMorph) {
-                self.displayed = .idle
-            }
-
-        default:
-            withAnimation(Tokens.Animations.saveMorph) {
-                self.displayed = newPhase
-            }
+    /// How the button arrives at `phase`.
+    private var animation: Animation {
+        switch self.phase {
+        case .idle: Tokens.Animations.saveMorph
+        case .working: Tokens.Animations.quickFade
+        case .success: Tokens.Animations.successPop
         }
     }
 }

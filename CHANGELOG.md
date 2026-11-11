@@ -12,6 +12,7 @@ All notable changes to FeedbackKit are recorded here. The format follows
 - **Breaking:** `FeedbackString` has `.sending`, the VoiceOver label of the Send button's spinner, which had none. Add it to the `switch` too.
 - A message longer than 5,000 characters is no longer cut without a word. It stays as typed, Send is disabled, and the message's footer, which VoiceOver also speaks, says it is too long until it is shortened.
 - Both fields are disabled while sending and after a successful send, so a late edit can't make the thank-you screen promise a reply to an address that was never sent.
+- The Send button's morph follows the send's state directly. A send that ends inside the 0.2 s fade to the spinner now goes straight on to the checkmark rather than waiting for the fade.
 
 ### Fixed
 
