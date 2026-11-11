@@ -84,13 +84,7 @@ public struct FeedbackView: View {
             .accessibilityIdentifier("feedback.form")
             .alert(
                 self.strings(.failedTitle),
-                isPresented: Binding(
-                    get: { self.model.alert != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            self.model.alert = nil
-                        }
-                    }),
+                isPresented: self.$model.isAlertPresented,
                 presenting: self.model.alert)
             { error in
                 if error == .unsupported {
@@ -308,11 +302,10 @@ extension View {
         model: FeedbackModel,
         strings: @escaping (FeedbackString) -> String) -> some View
     {
-        self.confirmationDialog(
+        @Bindable var model = model
+        return self.confirmationDialog(
             strings(.discardTitle),
-            isPresented: Binding(
-                get: { model.isDiscardConfirmationPresented },
-                set: { model.isDiscardConfirmationPresented = $0 }),
+            isPresented: $model.isDiscardConfirmationPresented,
             titleVisibility: .visible)
         {
             Button(strings(.discard), role: .destructive) {

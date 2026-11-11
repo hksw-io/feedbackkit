@@ -45,6 +45,16 @@ final class FeedbackModel {
         self.isUnsupported = !sender.isSupported
     }
 
+    /// The failure alert's binding: it is up for as long as there is an error, and closing it clears the error.
+    var isAlertPresented: Bool {
+        get { self.alert != nil }
+        set {
+            if !newValue {
+                self.alert = nil
+            }
+        }
+    }
+
     var hasMessage: Bool {
         !self.trimmedMessage.isEmpty
     }

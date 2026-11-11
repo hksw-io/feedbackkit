@@ -232,6 +232,22 @@ struct FeedbackModelTests {
     }
 
     @Test
+    func `closing the failure alert clears the error and keeps the draft`() async {
+        self.sender.failures = [.failed]
+        let model = self.makeModel(message: "Hello")
+        #expect(!model.isAlertPresented)
+
+        await model.sendTapped()
+        #expect(model.isAlertPresented)
+        model.isAlertPresented = false
+
+        #expect(model.alert == nil)
+        #expect(model.message == "Hello")
+        model.isAlertPresented = true
+        #expect(!model.isAlertPresented, "there is no error to show")
+    }
+
+    @Test
     func `a device without App Attest says it cannot send`() async {
         self.sender.isSupported = false
         let model = self.makeModel(message: "Hello")
