@@ -139,6 +139,7 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .emailInvalid: String(localized: "Enter a full email address, like name@example.com.")
     case .send: String(localized: "Send")
     case .cancel: String(localized: "Cancel")
+    case .sending: String(localized: "Sending")
     case .complete: String(localized: "Complete")
     case .failedTitle: String(localized: "Couldn’t Send Feedback")
     case .failedMessage: String(localized: "Something went wrong. Try again in a moment.")
@@ -153,7 +154,8 @@ func feedbackText(_ string: FeedbackString) -> String {
 }
 ```
 
-`.messageLabel` and `.emailLabel` are the fields' VoiceOver labels; `.complete` labels the checkmark.
+`.messageLabel` and `.emailLabel` are the fields' VoiceOver labels. `.sending` labels the Send button's
+spinner and `.complete` its checkmark; neither is shown, and VoiceOver speaks both.
 `.messageTooLong` takes the diagnostics footer's place while the message is over 5,000 characters.
 `.thanks` heads the thank-you screen, over `.thanksRead` when the person left no address, or `.thanksMayReply`
 when they did, so nobody who can't get a reply is told about replies.
@@ -283,7 +285,7 @@ Binary values are base64url without padding. Recovery follows the contract:
 
 ## Accessibility
 
-The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. VoiceOver announces the email error, a message that is too long, and the thanks. The form is a system `Form`, so it
+The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. The Send button reads as `.send`, then `.sending` under its spinner and `.complete` under its checkmark. VoiceOver announces the email error, a message that is too long, the send starting and completing, and the thanks. The form is a system `Form`, so it
 follows Dynamic Type and light and dark mode. Reduce Motion swaps the button morph and footer changes
 instantly, keeps every haptic, and keeps the thank-you screen's time on screen.
 

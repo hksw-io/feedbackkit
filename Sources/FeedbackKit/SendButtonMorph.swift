@@ -36,6 +36,7 @@ struct SendButtonMorph: View {
     let phase: Phase
     let title: String
     let image: Image?
+    let workingLabel: String
     let completeLabel: String
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -43,10 +44,11 @@ struct SendButtonMorph: View {
     @State private var latestPhase: Phase
     @State private var labelFadeDone = false
 
-    init(phase: Phase, title: String, image: Image?, completeLabel: String) {
+    init(phase: Phase, title: String, image: Image?, workingLabel: String, completeLabel: String) {
         self.phase = phase
         self.title = title
         self.image = image
+        self.workingLabel = workingLabel
         self.completeLabel = completeLabel
         self._displayed = State(initialValue: phase)
         self._latestPhase = State(initialValue: phase)
@@ -64,8 +66,10 @@ struct SendButtonMorph: View {
             .opacity(self.displayed == .idle ? 1 : 0)
             .accessibilityHidden(self.displayed != .idle)
 
+            // a spinner inside a button has no label of its own
             ProgressView()
                 .controlSize(.small)
+                .accessibilityLabel(self.workingLabel)
                 .opacity(self.displayed == .working ? 1 : 0)
                 .accessibilityHidden(self.displayed != .working)
 

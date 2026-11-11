@@ -118,6 +118,14 @@ public struct FeedbackView: View {
                     AccessibilityNotification.Announcement(self.strings(.messageTooLong)).post()
                 }
             }
+            .onChange(of: self.sendPhase) { _, phase in
+                // VoiceOver doesn't reread a button whose label changes under it
+                switch phase {
+                case .idle: break
+                case .working: AccessibilityNotification.Announcement(self.strings(.sending)).post()
+                case .success: AccessibilityNotification.Announcement(self.strings(.complete)).post()
+                }
+            }
             .onChange(of: self.model.didSucceed) { _, didSucceed in
                 if didSucceed {
                     self.focusedField = nil
@@ -161,9 +169,9 @@ public struct FeedbackView: View {
                                 phase: self.sendPhase,
                                 title: self.strings(.send),
                                 image: Image(systemName: "arrow.up"),
+                                workingLabel: self.strings(.sending),
                                 completeLabel: self.strings(.complete))
                         }
-                        .accessibilityLabel(self.strings(.send))
                         .buttonStyle(.glassProminent)
                         .disabled(!self.model.canSend)
                     }
@@ -196,6 +204,7 @@ public struct FeedbackView: View {
                             phase: self.sendPhase,
                             title: self.strings(.send),
                             image: nil,
+                            workingLabel: self.strings(.sending),
                             completeLabel: self.strings(.complete))
                     }
                     .keyboardShortcut(.defaultAction)

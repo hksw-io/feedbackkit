@@ -106,6 +106,7 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .emailInvalid: String(localized: "Enter a full email address, like name@example.com.")
     case .send: String(localized: "Send")
     case .cancel: String(localized: "Cancel")
+    case .sending: String(localized: "Sending")
     case .complete: String(localized: "Complete")
     case .failedTitle: String(localized: "Couldn’t Send Feedback")
     case .failedMessage: String(localized: "Something went wrong. Try again in a moment.")

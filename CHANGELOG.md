@@ -9,11 +9,13 @@ All notable changes to FeedbackKit are recorded here. The format follows
 ### Changed
 
 - **Breaking:** `FeedbackString` has `.messageTooLong`, the notice under a message of more than 5,000 characters. An app updating from 1.1 has to add it to its `switch`.
+- **Breaking:** `FeedbackString` has `.sending`, the VoiceOver label of the Send button's spinner, which had none. Add it to the `switch` too.
 - A message longer than 5,000 characters is no longer cut without a word. It stays as typed, Send is disabled, and the message's footer, which VoiceOver also speaks, says it is too long until it is shortened.
 - Both fields are disabled while sending and after a successful send, so a late edit can't make the thank-you screen promise a reply to an address that was never sent.
 
 ### Fixed
 
+- On iOS, VoiceOver now follows the Send button through a send. A label on the button itself had been overriding the checkmark's `.complete` with `.send`; it is gone, and VoiceOver speaks `.sending` when the send starts and `.complete` when it ends.
 - A stalled send no longer holds the form for minutes. Each request to the feedback service fails after 15 seconds without an answer, and Cancel (the close button on iOS) is disabled while sending rather than doing nothing when tapped.
 - A service outage no longer reads as "You're offline". A timeout, or a host that can't be found or reached, now ends in `.failed` and is logged; `.offline` is kept for no connection, a lost connection, and cellular data or roaming being off.
 - When the service has forgotten the App Attest key (`428`), or rejects a registration challenge (`401`), the kit now generates a new key straight away. DeviceCheck attests a key only once, so attesting the old key again failed with `invalidKey` and recovery only worked through the one key rotation, after a wasted challenge.
