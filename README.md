@@ -252,10 +252,11 @@ Binary values are base64url without padding. Recovery follows the contract:
 - When DeviceCheck says a key is invalid, the kit generates one new key. A second invalid key means the
   device can't send.
 - DeviceCheck's `serverUnavailable` is retried once after 2 seconds.
-- A retry of the same message after a lost connection or a `5xx` reuses its `Idempotency-Key`, so the
+- A retry of the same message after a network error or a `5xx` reuses its `Idempotency-Key`, so the
   service can recognize it. Anything else starts a new one.
-- `400`, `401`, `429` and `5xx` show the failure alert. No connection, a lost connection or a timeout
-  shows the offline message.
+- `400`, `401`, `429` and `5xx` show the failure alert, and so do a timeout and a host that can't be found
+  or reached, which are as likely the service being down. Only no connection, a lost connection, or
+  cellular data or roaming being off shows the offline message.
 
 ## Privacy
 

@@ -376,11 +376,11 @@ final class FeedbackClient: FeedbackSender {
         error is URLError || ((error as? HTTPStatus)?.code ?? 0) >= 500
     }
 
+    /// Only what the person can fix. A host that can't be found or reached, or a timeout, is as likely the
+    /// service being down, so it fails and is logged.
     private static func isOffline(_ error: URLError) -> Bool {
-        [
-            .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .internationalRoamingOff,
-            .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed, .timedOut,
-        ].contains(error.code)
+        [.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .internationalRoamingOff]
+            .contains(error.code)
     }
 
     private static func describe(_ error: any Error) -> String {

@@ -356,6 +356,32 @@ final class FeedbackClientTests {
         #expect(self.transport.requests(to: Self.challenges).last?["Idempotency-Key"] == submissions[1]["Idempotency-Key"])
     }
 
+    @Test(arguments: [
+        (.notConnectedToInternet, .offline),
+        (.networkConnectionLost, .offline),
+        (.dataNotAllowed, .offline),
+        (.internationalRoamingOff, .offline),
+        (.cannotFindHost, .failed),
+        (.cannotConnectToHost, .failed),
+        (.dnsLookupFailed, .failed),
+        (.timedOut, .failed),
+    ] as [(URLError.Code, FeedbackError)])
+    func `only a missing connection reads as offline, an unreachable service fails`(
+        code: URLError.Code,
+        error: FeedbackError) async throws
+    {
+        self.transport.replies[Self.feedback] = [.error(URLError(code))]
+        let client = self.makeClient()
+
+        await #expect(throws: error) {
+            try await client.send(Self.submission)
+        }
+        try await client.send(Self.submission)
+
+        let submissions = self.transport.requests(to: Self.feedback)
+        #expect(submissions[0]["Idempotency-Key"] == submissions[1]["Idempotency-Key"], "it may have arrived")
+    }
+
     @Test(arguments: [(400, false), (401, false), (429, false), (503, true)] as [(Int, Bool)])
     func `a refused submission fails and only a server error keeps the idempotency key`(
         status: Int,
