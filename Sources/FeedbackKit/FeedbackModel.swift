@@ -68,6 +68,11 @@ final class FeedbackModel {
                 && !email.contains(where: \.isWhitespace))
     }
 
+    /// What is on its way, or was sent, is what the fields show and what the thanks answer.
+    var isLocked: Bool {
+        self.isSending || self.didSucceed
+    }
+
     var preventsInteractiveDismissal: Bool {
         self.hasDraft || self.isSending || self.didSucceed
     }
@@ -113,10 +118,12 @@ final class FeedbackModel {
     }
 
     func messageChanged(_ message: String) {
+        guard !self.isLocked else { return }
         self.message = message
     }
 
     func emailChanged(_ email: String) {
+        guard !self.isLocked else { return }
         self.email = email
         if self.isEmailValid {
             self.isEmailErrorVisible = false

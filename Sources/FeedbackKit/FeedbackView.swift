@@ -238,6 +238,7 @@ public struct FeedbackView: View {
                 .lineLimit(8 ... 16)
             #endif
                 .focused(self.$focusedField, equals: .message)
+                .disabled(self.model.isLocked)
         } footer: {
             Text(self.strings(self.model.messageFooter))
                 .foregroundStyle(.secondary)
@@ -267,6 +268,7 @@ public struct FeedbackView: View {
                 .autocorrectionDisabled(true)
             #endif
                 .focused(self.$focusedField, equals: .email)
+                .disabled(self.model.isLocked)
         } footer: {
             Text(self.strings(self.model.emailFooter))
                 .foregroundStyle(.secondary)

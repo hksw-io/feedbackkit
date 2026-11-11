@@ -104,6 +104,40 @@ struct FeedbackModelTests {
         #expect(self.makeModel(message: "Hi", email: "a@b.co").thanksDetail == .thanksMayReply)
     }
 
+    @Test
+    func `the draft is locked while sending and after, so the thanks answer what was sent`() async {
+        let model = self.makeModel(message: "Hi")
+        #expect(!model.isLocked)
+        var wasLocked = false
+        self.sender.whileSending = {
+            wasLocked = model.isLocked
+            model.messageChanged("Hi, and one more thing")
+            model.emailChanged("late@example.com")
+        }
+
+        await model.sendTapped()
+        model.emailChanged("later@example.com")
+
+        #expect(wasLocked)
+        #expect(model.isLocked)
+        #expect(model.message == "Hi")
+        #expect(model.email.isEmpty)
+        #expect(self.sender.sent.map(\.email) == [nil])
+        #expect(model.thanksDetail == .thanksRead, "no address was sent, so nothing about replies")
+    }
+
+    @Test
+    func `a failed send unlocks the draft`() async {
+        self.sender.failures = [.failed]
+        let model = self.makeModel(message: "Hi")
+
+        await model.sendTapped()
+        #expect(!model.isLocked)
+        model.messageChanged("Hi again")
+
+        #expect(model.message == "Hi again")
+    }
+
     @Test(arguments: [
         (FeedbackModel.thanksLead, false),
         (FeedbackModel.thanksDwell, true),

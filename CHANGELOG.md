@@ -10,6 +10,7 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 - **Breaking:** `FeedbackString` has `.messageTooLong`, the notice under a message of more than 5,000 characters. An app updating from 1.1 has to add it to its `switch`.
 - A message longer than 5,000 characters is no longer cut without a word. It stays as typed, Send is disabled, and the message's footer, which VoiceOver also speaks, says it is too long until it is shortened.
+- Both fields are disabled while sending and after a successful send, so a late edit can't make the thank-you screen promise a reply to an address that was never sent.
 
 ### Fixed
 
