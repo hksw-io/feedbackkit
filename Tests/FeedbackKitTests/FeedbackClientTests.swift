@@ -68,6 +68,7 @@ final class FakeAttestation: AppAttesting {
     private(set) var keys: [String] = []
     private(set) var attestCalls: [Call] = []
     private(set) var assertionCalls: [Call] = []
+    private var attested: Set<String> = []
 
     func generateKey() async throws -> String {
         let key = Data(repeating: UInt8(0xA0 + self.keys.count), count: 32).base64EncodedString()
@@ -82,6 +83,10 @@ final class FakeAttestation: AppAttesting {
         self.attestCalls.append(Call(keyID: keyID, clientDataHash: clientDataHash))
         if let code = self.attestFailures[self.attestCalls.count] {
             throw DCError(code)
+        }
+        // DCError.h: attestKey fails with invalidKey "for a key that's already been attested"
+        guard self.attested.insert(keyID).inserted else {
+            throw DCError(.invalidKey)
         }
         return Data("attestation-\(self.attestCalls.count)".utf8)
     }
@@ -245,7 +250,7 @@ final class FeedbackClientTests {
     }
 
     @Test
-    func `an unregistered key is registered again before the feedback is resent`() async throws {
+    func `a key the server forgot is replaced by a new one before the feedback is resent`() async throws {
         self.transport.replies[Self.feedback] = [.status(428, errorCode: "app-attest-key-unregistered")]
 
         try await self.makeClient().send(Self.submission)
@@ -254,31 +259,42 @@ final class FeedbackClientTests {
             Self.challenges, Self.keys, Self.challenges, Self.feedback,
             Self.challenges, Self.keys, Self.challenges, Self.feedback,
         ])
-        #expect(self.attestation.keys.count == 1)
-        #expect(self.attestation.attestCalls.map(\.keyID) == [self.attestation.keys[0], self.attestation.keys[0]])
+        #expect(self.attestation.keys.count == 2)
+        #expect(self.attestation.attestCalls.map(\.keyID) == self.attestation.keys, "a key is attested only once")
+        let replacement = Self.wire(self.attestation.keys[1])
+        #expect(self.transport.requests(to: Self.keys).last?.json?["keyID"] as? String == replacement)
         let submissions = self.transport.requests(to: Self.feedback)
+        #expect(submissions[1]["X-Feedback-App-Attest-Key-ID"] == replacement)
         #expect(submissions[0]["Idempotency-Key"] != submissions[1]["Idempotency-Key"])
+        #expect(UserDefaults.standard.string(forKey: "\(self.appID).feedbackKit.appAttestKeyID") == self.attestation.keys[1])
     }
 
     @Test
     func `a key DeviceCheck calls invalid is replaced once`() async throws {
-        self.transport.replies[Self.feedback] = [.status(428, errorCode: "app-attest-key-unregistered")]
-        self.attestation.attestFailures = [2: .invalidKey]
+        // the key is attested, but its registration never arrives, so the next send attests it a second time
+        self.transport.replies[Self.keys] = [.error(URLError(.networkConnectionLost))]
+        let client = self.makeClient()
 
-        try await self.makeClient().send(Self.submission)
+        await #expect(throws: FeedbackError.offline) {
+            try await client.send(Self.submission)
+        }
+        try await client.send(Self.submission)
 
         #expect(self.transport.paths == [
-            Self.challenges, Self.keys, Self.challenges, Self.feedback,
+            Self.challenges, Self.keys,
             Self.challenges, Self.challenges, Self.keys, Self.challenges, Self.feedback,
         ])
         #expect(self.attestation.keys.count == 2)
+        #expect(self.attestation.attestCalls.map(\.keyID) == [
+            self.attestation.keys[0], self.attestation.keys[0], self.attestation.keys[1],
+        ])
         let replacement = Self.wire(self.attestation.keys[1])
         #expect(self.transport.requests(to: Self.keys).last?.json?["keyID"] as? String == replacement)
         #expect(self.transport.requests(to: Self.feedback).last?["X-Feedback-App-Attest-Key-ID"] == replacement)
     }
 
     @Test
-    func `a rejected registration challenge is replaced with a new one`() async throws {
+    func `a rejected registration challenge is replaced with a new one, for a new key`() async throws {
         self.transport.replies[Self.keys] = [.status(401, errorCode: "app-attest-registration-challenge-rejected")]
 
         try await self.makeClient().send(Self.submission)
@@ -286,14 +302,26 @@ final class FeedbackClientTests {
         #expect(self.transport.paths == [
             Self.challenges, Self.keys, Self.challenges, Self.keys, Self.challenges, Self.feedback,
         ])
-        #expect(self.attestation.keys.count == 1)
+        #expect(self.attestation.keys.count == 2)
         #expect(self.attestation.attestCalls == [
             .init(keyID: self.attestation.keys[0], clientDataHash: self.transport.challenges[0].bytes),
-            .init(keyID: self.attestation.keys[0], clientDataHash: self.transport.challenges[1].bytes),
+            .init(keyID: self.attestation.keys[1], clientDataHash: self.transport.challenges[1].bytes),
         ])
         let registrations = self.transport.requests(to: Self.keys)
         #expect(registrations[0]["Idempotency-Key"] != registrations[1]["Idempotency-Key"])
         #expect(registrations[1]["X-Feedback-App-Attest-Challenge-ID"] == self.transport.challenges[1].id)
+        #expect(registrations[1].json?["keyID"] as? String == Self.wire(self.attestation.keys[1]))
+    }
+
+    @Test
+    func `a registration challenge rejected twice fails`() async {
+        let rejected = FakeTransport.Reply.status(401, errorCode: "app-attest-registration-challenge-rejected")
+        self.transport.replies[Self.keys] = [rejected, rejected]
+
+        await #expect(throws: FeedbackError.failed) {
+            try await self.makeClient().send(Self.submission)
+        }
+        #expect(self.transport.paths == [Self.challenges, Self.keys, Self.challenges, Self.keys])
     }
 
     @Test

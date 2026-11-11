@@ -178,13 +178,15 @@ final class FeedbackClient: FeedbackSender {
                 canRotate = false
                 self.storedKey = nil
             } catch let status as HTTPStatus where canRegisterAgain && status.asksForRegistration {
+                // DeviceCheck attests a key only once, so the key the server forgot can't be registered again
                 canRegisterAgain = false
-                self.storedKey = (key.id, false)
+                self.storedKey = nil
             }
         }
     }
 
     private func registeredKey(appTransaction: String, canRotate: inout Bool) async throws -> Key {
+        var canRetryChallenge = true
         while true {
             let key: Key
             if let stored = self.storedKey, let storedKey = Key(stored.id) {
@@ -205,34 +207,30 @@ final class FeedbackClient: FeedbackSender {
             } catch is InvalidKey where canRotate {
                 canRotate = false
                 self.storedKey = nil
+            } catch let status as HTTPStatus where canRetryChallenge && status.rejectsRegistrationChallenge {
+                // the key is attested by now, and DeviceCheck attests a key only once: a new challenge needs a new key
+                canRetryChallenge = false
+                self.storedKey = nil
             }
         }
     }
 
     private func register(_ key: Key, appTransaction: String) async throws {
-        var canRetryChallenge = true
-        while true {
-            let idempotencyKey = Self.newIdempotencyKey()
-            let challenge = try await self.challenge(
-                ChallengeRequest(purpose: "registerKey", keyID: key.wire, bodySHA256: nil),
-                idempotencyKey: idempotencyKey,
-                appTransaction: appTransaction)
-            let attestation = try await self.deviceCheck {
-                try await self.attestation.attestKey(key.id, clientDataHash: challenge.bytes)
-            }
-            do {
-                try await self.post(
-                    "v1/app-attest/keys",
-                    body: Self.encode(Registration(keyID: key.wire, attestationObject: attestation.base64URL)),
-                    idempotencyKey: idempotencyKey,
-                    appTransaction: appTransaction,
-                    headers: ["X-Feedback-App-Attest-Challenge-ID": challenge.id],
-                    expecting: 204)
-                return
-            } catch let status as HTTPStatus where canRetryChallenge && status.rejectsRegistrationChallenge {
-                canRetryChallenge = false
-            }
+        let idempotencyKey = Self.newIdempotencyKey()
+        let challenge = try await self.challenge(
+            ChallengeRequest(purpose: "registerKey", keyID: key.wire, bodySHA256: nil),
+            idempotencyKey: idempotencyKey,
+            appTransaction: appTransaction)
+        let attestation = try await self.deviceCheck {
+            try await self.attestation.attestKey(key.id, clientDataHash: challenge.bytes)
         }
+        try await self.post(
+            "v1/app-attest/keys",
+            body: Self.encode(Registration(keyID: key.wire, attestationObject: attestation.base64URL)),
+            idempotencyKey: idempotencyKey,
+            appTransaction: appTransaction,
+            headers: ["X-Feedback-App-Attest-Challenge-ID": challenge.id],
+            expecting: 204)
     }
 
     private func submit(_ body: Data, key: Key, appTransaction: String) async throws {

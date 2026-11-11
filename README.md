@@ -247,8 +247,10 @@ service isn't open source; this summary is for reviewing what the kit sends. For
 
 Binary values are base64url without padding. Recovery follows the contract:
 
-- `428` with `app-attest-key-unregistered` registers the key again and resends, once.
-- `401` with `app-attest-registration-challenge-rejected` asks for a new registration challenge, once.
+- `428` with `app-attest-key-unregistered` generates and registers a new key and resends, once. DeviceCheck
+  attests a key only once, so the key the service forgot can't be registered again.
+- `401` with `app-attest-registration-challenge-rejected` asks for a new registration challenge and attests
+  a new key with it, once, for the same reason.
 - When DeviceCheck says a key is invalid, the kit generates one new key. A second invalid key means the
   device can't send.
 - DeviceCheck's `serverUnavailable` is retried once after 2 seconds.

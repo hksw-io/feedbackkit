@@ -10,6 +10,7 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 - A stalled send no longer holds the form for minutes. Each request to the feedback service fails after 15 seconds without an answer, and Cancel (the close button on iOS) is disabled while sending rather than doing nothing when tapped.
 - A service outage no longer reads as "You're offline". A timeout, or a host that can't be found or reached, now ends in `.failed` and is logged; `.offline` is kept for no connection, a lost connection, and cellular data or roaming being off.
+- When the service has forgotten the App Attest key (`428`), or rejects a registration challenge (`401`), the kit now generates a new key straight away. DeviceCheck attests a key only once, so attesting the old key again failed with `invalidKey` and recovery only worked through the one key rotation, after a wasted challenge.
 
 ## [1.1.0] - 2026-10-31
 
