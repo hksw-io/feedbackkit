@@ -22,9 +22,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-26
-            xcode: '26.6'
-            runtime: '26'
           # https://github.com/actions/runner-images/issues/14404
           - runner: xcode-27
             xcode: '27.0'

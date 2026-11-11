@@ -33,7 +33,7 @@ Instructions for agents working in this repository. RFC 2119 keywords apply.
 - Add or update Swift Testing coverage for every behavior change. `FeedbackModelTests` drives the model with a fake `FeedbackSender` and a recorded `sleep`; `FeedbackClientTests` drives the client with a fake transport and a fake App Attest service.
 - Tests MUST compare `FeedbackString` values, never English literals.
 - Run `swift test` and `xcodebuild -scheme FeedbackKit -destination 'generic/platform=iOS Simulator' build` before calling work complete, and `git diff --check` before committing.
-- CI (`.github/workflows/ci.yml`) runs macOS and iOS Simulator tests on Xcode 26.6 and 27.0 and builds the demo app. Keep it green.
+- CI (`.github/workflows/ci.yml`) checks every source file's platform wrapper, runs macOS and iOS Simulator tests on Xcode 27.0, and builds the demo app. Keep it green.
 
 ## Documentation and Releases
 
