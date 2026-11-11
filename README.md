@@ -128,6 +128,7 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .messageLabel: String(localized: "Message")
     case .diagnosticsFooter:
         String(localized: "Your app version, system version, device model and language are sent with your message.")
+    case .messageTooLong: String(localized: "Your message is too long. Shorten it to 5,000 characters or fewer.")
     case .thanks: String(localized: "Thanks for Your Feedback")
     case .thanksRead: String(localized: "We read all feedback.")
     case .thanksMayReply: String(localized: "We read all feedback and try to reply to every message.")
@@ -153,6 +154,7 @@ func feedbackText(_ string: FeedbackString) -> String {
 ```
 
 `.messageLabel` and `.emailLabel` are the fields' VoiceOver labels; `.complete` labels the checkmark.
+`.messageTooLong` takes the diagnostics footer's place while the message is over 5,000 characters.
 `.thanks` heads the thank-you screen, over `.thanksRead` when the person left no address, or `.thanksMayReply`
 when they did, so nobody who can't get a reply is told about replies.
 `.unsupported` is the footer, and the alert message, on a device that can't send.
@@ -216,7 +218,8 @@ The demo app in `Demo/` does this with a picker for each outcome.
 
 ## Behavior
 
-- Send is enabled whenever the trimmed message is non-empty, up to 5,000 characters.
+- Send is enabled whenever the trimmed message is 1 to 5,000 characters long. A longer message is kept as
+  typed, never cut: Send is disabled and the message's footer says why until it is shortened.
 - The email address is optional. Its error appears when the field loses focus or Send is tapped with an
   incomplete address, and clears as soon as the address is complete. Send with an incomplete address
   shows the error, plays the error haptic and sends nothing.
@@ -279,7 +282,7 @@ Binary values are base64url without padding. Recovery follows the contract:
 
 ## Accessibility
 
-The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. VoiceOver announces the email error and the thanks. The form is a system `Form`, so it
+The fields have VoiceOver labels from `.messageLabel` and `.emailLabel`. VoiceOver announces the email error, a message that is too long, and the thanks. The form is a system `Form`, so it
 follows Dynamic Type and light and dark mode. Reduce Motion swaps the button morph and footer changes
 instantly, keeps every haptic, and keeps the thank-you screen's time on screen.
 

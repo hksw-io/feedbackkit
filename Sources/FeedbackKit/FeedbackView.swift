@@ -113,6 +113,11 @@ public struct FeedbackView: View {
             .onChange(of: self.model.emailErrorCount) {
                 AccessibilityNotification.Announcement(self.strings(.emailInvalid)).post()
             }
+            .onChange(of: self.model.isMessageTooLong) { _, isTooLong in
+                if isTooLong {
+                    AccessibilityNotification.Announcement(self.strings(.messageTooLong)).post()
+                }
+            }
             .onChange(of: self.model.didSucceed) { _, didSucceed in
                 if didSucceed {
                     self.focusedField = nil

@@ -49,8 +49,13 @@ final class FeedbackModel {
         !self.trimmedMessage.isEmpty
     }
 
+    /// The service takes up to 5,000 characters after trimming. A longer message is kept as typed, never cut.
+    var isMessageTooLong: Bool {
+        self.trimmedMessage.count > Self.maximumMessageLength
+    }
+
     var canSend: Bool {
-        self.hasMessage && !self.isUnsupported
+        self.hasMessage && !self.isMessageTooLong && !self.isUnsupported
     }
 
     var isEmailValid: Bool {
@@ -68,7 +73,13 @@ final class FeedbackModel {
     }
 
     var messageFooter: FeedbackString {
-        self.isUnsupported ? .unsupported : .diagnosticsFooter
+        if self.isUnsupported {
+            .unsupported
+        } else if self.isMessageTooLong {
+            .messageTooLong
+        } else {
+            .diagnosticsFooter
+        }
     }
 
     /// A reply is only worth mentioning to someone who left an address to reply to.
@@ -102,7 +113,7 @@ final class FeedbackModel {
     }
 
     func messageChanged(_ message: String) {
-        self.message = String(message.prefix(Self.maximumMessageLength))
+        self.message = message
     }
 
     func emailChanged(_ email: String) {

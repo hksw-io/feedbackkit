@@ -46,7 +46,8 @@ public enum FeedbackError: Error, Equatable, Sendable {
 
 /// Every piece of copy in the form. The kit ships no strings: the app returns its own localized text for each
 /// case through the `strings` closure. `.messageLabel` and `.emailLabel` are VoiceOver labels, and `.complete`
-/// labels the checkmark after a send. `.thanks` heads the thank-you screen, over `.thanksRead` when the person left
+/// labels the checkmark after a send. `.messageTooLong` is the message's footer, and spoken, while the message is
+/// over 5,000 characters and Send is disabled. `.thanks` heads the thank-you screen, over `.thanksRead` when the person left
 /// no address, or `.thanksMayReply` when they did.
 public enum FeedbackString: Hashable, Sendable {
     case feedbackTitle
@@ -56,6 +57,7 @@ public enum FeedbackString: Hashable, Sendable {
     case contentPrompt
     case messageLabel
     case diagnosticsFooter
+    case messageTooLong
     case thanks
     case thanksRead
     case thanksMayReply

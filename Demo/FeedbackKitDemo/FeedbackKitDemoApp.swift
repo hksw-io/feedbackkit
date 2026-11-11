@@ -95,6 +95,7 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .messageLabel: String(localized: "Message")
     case .diagnosticsFooter:
         String(localized: "Your app version, system version, device model and language are sent with your message.")
+    case .messageTooLong: String(localized: "Your message is too long. Shorten it to 5,000 characters or fewer.")
     case .thanks: String(localized: "Thanks for Your Feedback")
     case .thanksRead: String(localized: "We read all feedback.")
     case .thanksMayReply: String(localized: "We read all feedback and try to reply to every message.")

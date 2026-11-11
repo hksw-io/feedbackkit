@@ -250,10 +250,31 @@ struct FeedbackModelTests {
     }
 
     @Test
-    func `a message longer than the server takes is cut at the limit`() {
-        let model = self.makeModel(message: String(repeating: "a", count: 5010))
+    func `a message longer than the server takes is kept, and blocks sending until it is shortened`() async {
+        let model = self.makeModel(message: String(repeating: "a", count: 5001))
 
-        #expect(model.message.count == 5000)
+        #expect(model.message.count == 5001, "nothing is cut")
+        #expect(model.isMessageTooLong)
+        #expect(!model.canSend)
+        #expect(model.messageFooter == .messageTooLong)
+        await model.sendTapped()
+        #expect(self.sender.sent.isEmpty)
+
+        model.messageChanged(" " + String(repeating: "a", count: 5000) + "\n")
+        #expect(!model.isMessageTooLong, "the limit counts the trimmed message, as the server does")
+        #expect(model.canSend)
+        #expect(model.messageFooter == .diagnosticsFooter)
+        await model.sendTapped()
+
+        #expect(self.sender.sent.first?.message.count == 5000)
+    }
+
+    @Test
+    func `a device that cannot send says so even when the message is too long`() {
+        self.sender.isSupported = false
+        let model = self.makeModel(message: String(repeating: "a", count: 5001))
+
+        #expect(model.messageFooter == .unsupported)
     }
 
     @Test
