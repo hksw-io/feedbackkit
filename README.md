@@ -222,6 +222,9 @@ The demo app in `Demo/` does this with a picker for each outcome.
   shows the error, plays the error haptic and sends nothing.
 - On iOS the Discard Changes confirmation comes from the close button, and a swipe-down on a draft asks
   too. On macOS it comes from Cancel.
+- While sending, the form can't be closed and Cancel, or the close button on iOS, is disabled. A request to
+  the HK Softworks service that gets no answer for 15 seconds fails, so a stalled send ends in the failure
+  alert.
 - A failed send keeps the draft and offers Try Again. Being offline has its own message.
 - A device without App Attest, or one whose App Attest keeps failing, says it can't send feedback and
   disables Send.

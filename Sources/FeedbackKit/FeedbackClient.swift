@@ -37,6 +37,8 @@ final class FeedbackClient: FeedbackSender {
     typealias Transport = @Sendable (URLRequest) async throws -> (Data, URLResponse)
 
     static let deviceCheckRetryDelay: Duration = .seconds(2)
+    /// How long one request may sit idle. A first send makes four, and the form can't be closed until they end.
+    static let requestTimeout: TimeInterval = 15
 
     struct HTTPStatus: Error {
         let code: Int
@@ -304,6 +306,7 @@ final class FeedbackClient: FeedbackSender {
         var request = URLRequest(url: self.serviceURL.appending(path: path))
         request.httpMethod = "POST"
         request.httpBody = body
+        request.timeoutInterval = Self.requestTimeout
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(self.appID, forHTTPHeaderField: "X-Feedback-App")
         request.setValue(appTransaction, forHTTPHeaderField: "X-Feedback-App-Transaction")

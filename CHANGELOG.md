@@ -6,6 +6,10 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A stalled send no longer holds the form for minutes. Each request to the feedback service fails after 15 seconds without an answer, and Cancel (the close button on iOS) is disabled while sending rather than doing nothing when tapped.
+
 ## [1.1.0] - 2026-10-31
 
 ### Changed

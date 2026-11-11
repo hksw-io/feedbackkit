@@ -179,6 +179,7 @@ final class FeedbackClientTests {
         let requests = self.transport.requests
         for request in requests {
             #expect(request.httpMethod == "POST")
+            #expect(request.timeoutInterval == 15, "a stalled request ends well before URLSession's 60 seconds")
             #expect(request["Content-Type"] == "application/json")
             #expect(request["X-Feedback-App"] == self.appID)
             #expect(request["X-Feedback-App-Transaction"] == Self.appTransaction)

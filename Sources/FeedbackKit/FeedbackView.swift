@@ -147,6 +147,7 @@ public struct FeedbackView: View {
                         }
                         .labelStyle(.iconOnly)
                         .keyboardShortcut(.cancelAction)
+                        .disabled(self.model.isSending)
                         .discardConfirmation(model: self.model, strings: self.strings)
                     }
                     ToolbarItem(placement: .confirmationAction) {
@@ -183,6 +184,7 @@ public struct FeedbackView: View {
                         self.model.cancelTapped()
                     }
                     .keyboardShortcut(.cancelAction)
+                    .disabled(self.model.isSending)
 
                     Button(action: self.send) {
                         SendButtonMorph(
