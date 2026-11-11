@@ -33,6 +33,20 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
+      - name: Check the platform wrapper
+        run: |
+          # AGENTS.md: consumers link the package into frameworks that also build for watchOS
+          status=0
+          while IFS= read -r file; do
+            case "$(head -n 1 "$file")" in
+              '#if os(iOS) || os(macOS)' | '#if os(iOS)') ;;
+              *)
+                echo "::error file=$file,line=1::$file must start with '#if os(iOS) || os(macOS)', or '#if os(iOS)' when it is UIKit-only"
+                status=1
+                ;;
+            esac
+          done < <(find Sources -type f -name '*.swift')
+          exit "$status"
       - name: Show toolchain
         run: |
           xcodebuild -version
