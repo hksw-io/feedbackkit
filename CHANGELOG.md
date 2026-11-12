@@ -6,6 +6,8 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-12
+
 ### Added
 
 - `CrashReporter` takes the crash reports MetricKit hands the app on the launch after a crash and sends them to the HK Softworks feedback service's `POST /v1/crash`, only when the person agrees. Start it as the app launches. It reads `MetricManager` on iOS and macOS 27, where it also registers with `MXMetricManager` so MetricKit collects, and `MXMetricManager` before, and does nothing without App Attest, so on a Mac before macOS 27 and in the Simulator.
