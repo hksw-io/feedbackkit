@@ -75,7 +75,7 @@ public final class CrashReporter {
                         appVersion: "\(environment.applicationVersion) (\(environment.applicationBuildVersion))",
                         system: "\(os.platform) \(os.number) (\(os.buildNumber))",
                         device: environment.deviceType)
-                    self?.receive(crash.map { [$0] } ?? [])
+                    self?.receive([crash])
                 }
             }
         } else {

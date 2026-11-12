@@ -27,9 +27,9 @@ final class CrashReporterTests {
         { continuation.yield($0) }
     }
 
-    private static func report(_ offset: UInt64) throws -> CrashReport {
+    private static func report(_ offset: UInt64) -> CrashReport {
         let frame = CrashReport.Frame(binary: "Swiftflip", uuid: CrashReportTests.app, offset: offset)
-        return try #require(CrashReport(
+        return CrashReport(
             threads: [CrashReport.Thread(crashed: true, frames: [frame])],
             appBinaries: ["Swiftflip"],
             appVersion: "1.23.0 (295)",
@@ -39,12 +39,12 @@ final class CrashReporterTests {
             exceptionCode: 0,
             signal: 11,
             exceptionName: nil,
-            className: nil))
+            className: nil)
     }
 
     @Test
     func `reports wait for the person's answer, and Send sends them`() async throws {
-        let (first, second) = (try Self.report(1), try Self.report(2))
+        let (first, second) = (Self.report(1), Self.report(2))
         let reporter = self.makeReporter()
         reporter.receive([first, second])
         try #require(reporter.isAsking)
@@ -60,7 +60,7 @@ final class CrashReporterTests {
 
     @Test
     func `Don't Send drops the reports that were waiting`() async throws {
-        let (first, second) = (try Self.report(1), try Self.report(2))
+        let (first, second) = (Self.report(1), Self.report(2))
         let reporter = self.makeReporter()
         reporter.receive([first])
         try #require(reporter.isAsking)
@@ -76,7 +76,7 @@ final class CrashReporterTests {
 
     @Test
     func `Always Send sends these and every later report without asking, and is remembered`() async throws {
-        let (first, second) = (try Self.report(1), try Self.report(2))
+        let (first, second) = (Self.report(1), Self.report(2))
         let reporter = self.makeReporter()
         reporter.receive([first])
         try #require(reporter.isAsking)
@@ -97,7 +97,7 @@ final class CrashReporterTests {
         reporter.alwaysSends = true
 
         reporter.alwaysSends = false
-        reporter.receive([try Self.report(1)])
+        reporter.receive([Self.report(1)])
 
         #expect(reporter.isAsking)
         #expect(!self.makeReporter().alwaysSends)
@@ -107,7 +107,7 @@ final class CrashReporterTests {
     func `a device that can't send never asks`() throws {
         let reporter = self.makeReporter(canSend: false)
 
-        reporter.receive([try Self.report(1)])
+        reporter.receive([Self.report(1)])
 
         #expect(!reporter.isAsking)
     }

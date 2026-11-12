@@ -276,7 +276,9 @@ func crashReportText(_ string: CrashReportString) -> String {
 A report holds the crashed run's app version and build, system version and hardware model; the Mach
 exception type and code, the signal, and an Objective-C exception's name and class; and the crashed
 thread's frames, top first, each a binary's name, its UUID and the offset into it, at most 512. Its site, the
-first frame in the app's own code, is what the service groups reports by. It never holds an exception's
+first frame in the app's own code, is what the service groups reports by. MetricKit sometimes gives the
+crashed thread no stack, as for an uncaught Objective-C exception on iOS 27.3; such a report is still asked
+about and sent, with no frames and no site. It never holds an exception's
 message or arguments, which can contain what someone typed, the other threads, signposts, the process
 ID, the region format or Low Power Mode. Frames are not symbolicated: use the build's dSYM.
 

@@ -237,7 +237,7 @@ final class FeedbackClientTests {
 
     @Test
     func `a crash report goes to its own route, with an assertion that names it`() async throws {
-        let report = try #require(try CrashReportTests.report(exceptionName: "NSInvalidArgumentException", className: "NSException"))
+        let report = try CrashReportTests.report(exceptionName: "NSInvalidArgumentException", className: "NSException")
 
         try await self.makeClient().send(report)
 

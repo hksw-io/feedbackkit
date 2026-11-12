@@ -29,11 +29,11 @@ struct CrashReport: Encodable, Equatable, Sendable {
     let exceptionName: String?
     let className: String?
     /// The first frame in the app's own code, or the top frame when there is none: what the service groups by.
-    let site: String
+    /// `nil`, with no frames, when MetricKit gave the crashed thread no stack.
+    let site: String?
     let frames: [Frame]
 
-    /// `nil` when the crashed thread has no frame.
-    init?(
+    init(
         threads: [Thread],
         appBinaries: Set<String>,
         appVersion: String,
@@ -46,8 +46,7 @@ struct CrashReport: Encodable, Equatable, Sendable {
         className: String?)
     {
         let frames = (threads.first(where: \.crashed) ?? threads.first { !$0.frames.isEmpty })?.frames ?? []
-        guard let top = frames.first else { return nil }
-        let site = frames.first { appBinaries.contains($0.binary) } ?? top
+        let site = frames.first { appBinaries.contains($0.binary) } ?? frames.first
         self.appVersion = String(appVersion.prefix(100))
         self.system = String(system.prefix(100))
         self.device = String(device.prefix(100))
@@ -56,7 +55,7 @@ struct CrashReport: Encodable, Equatable, Sendable {
         self.signal = signal
         self.exceptionName = exceptionName.flatMap { $0.isEmpty ? nil : String($0.prefix(200)) }
         self.className = className.flatMap { $0.isEmpty ? nil : String($0.prefix(200)) }
-        self.site = "\(site.binary.prefix(100))+0x\(String(site.offset, radix: 16))"
+        self.site = site.map { "\($0.binary.prefix(100))+0x\(String($0.offset, radix: 16))" }
         self.frames = frames.prefix(Self.maxFrames).map { Frame(binary: String($0.binary.prefix(100)), uuid: $0.uuid, offset: $0.offset) }
     }
 }
@@ -71,7 +70,7 @@ extension CrashReport.Frame {
 // MARK: - MXCrashDiagnostic, iOS 26
 
 extension CrashReport {
-    init?(_ diagnostic: MXCrashDiagnostic, appBinaries: Set<String>) throws {
+    init(_ diagnostic: MXCrashDiagnostic, appBinaries: Set<String>) throws {
         try self.init(
             callStackTree: diagnostic.callStackTree.jsonRepresentation(),
             appBinaries: appBinaries,
@@ -88,7 +87,7 @@ extension CrashReport {
     /// From the JSON `MXCallStackTree.jsonRepresentation()` writes. Each frame nests its callers in it, so a deep
     /// stack is deeper than Foundation's JSON reader goes (512 levels, about 255 frames). `CallStackScanner` reads it
     /// in one pass instead, without building the tree.
-    init?(
+    init(
         callStackTree: Data,
         appBinaries: Set<String>,
         appVersion: String,
@@ -279,7 +278,7 @@ enum CallStackScanner {
 
 @available(iOS 27, macOS 27, *)
 extension CrashReport {
-    init?(_ diagnostic: CrashDiagnostic, appBinaries: Set<String>, appVersion: String, system: String, device: String) {
+    init(_ diagnostic: CrashDiagnostic, appBinaries: Set<String>, appVersion: String, system: String, device: String) {
         let tree = diagnostic.callStackTree
         self.init(
             threads: tree.callStackThreads.map { thread in
