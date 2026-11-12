@@ -13,7 +13,9 @@ let package = Package(
             targets: ["FeedbackKit"]),
     ],
     targets: [
-        .target(name: "FeedbackKit"),
+        .target(
+            name: "FeedbackKit",
+            resources: [.copy("PrivacyInfo.xcprivacy")]),
         .testTarget(
             name: "FeedbackKitTests",
             dependencies: ["FeedbackKit"]),

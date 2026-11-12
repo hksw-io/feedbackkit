@@ -14,6 +14,7 @@ struct DemoView: View {
     enum Sheet: String, Identifiable {
         case feedback
         case problem
+        case crashReport
 
         var id: Self {
             self
@@ -23,6 +24,7 @@ struct DemoView: View {
     @State private var sheet = UserDefaults.standard.string(forKey: "demoSheet").flatMap(Sheet.init)
     @State private var outcome = UserDefaults.standard.string(forKey: "demoOutcome").flatMap(DemoSender.Outcome.init)
         ?? .success
+    @State private var crashReporter = CrashReporter(serviceURL: URL(filePath: "/"))
 
     var body: some View {
         NavigationStack {
@@ -30,6 +32,7 @@ struct DemoView: View {
                 Section {
                     Button("Send Feedback") { self.sheet = .feedback }
                     Button("Report a Problem") { self.sheet = .problem }
+                    Button("Crash Report") { self.sheet = .crashReport }
                 }
                 Section("Fake Service") {
                     Picker("Outcome", selection: self.$outcome) {
@@ -44,14 +47,21 @@ struct DemoView: View {
             .navigationTitle("FeedbackKit")
         }
         .sheet(item: self.$sheet) { sheet in
-            FeedbackView(
-                sender: DemoSender(outcome: self.outcome),
-                icon: Image(systemName: "bubble.left.and.text.bubble.right.fill"),
-                strings: feedbackText,
-                title: sheet == .feedback ? .feedbackTitle : .problemTitle,
-                prompt: sheet == .feedback ? .feedbackPrompt : .problemPrompt,
-                context: sheet == .feedback ? [] : ["Action: Couldn’t Save Card", "Error: card.save"],
-                onDismiss: { self.sheet = nil })
+            if sheet == .crashReport {
+                CrashReportView(
+                    reporter: self.crashReporter,
+                    privacyURL: URL(string: "https://example.com/privacy")!,
+                    strings: crashReportText)
+            } else {
+                FeedbackView(
+                    sender: DemoSender(outcome: self.outcome),
+                    icon: Image(systemName: "bubble.left.and.text.bubble.right.fill"),
+                    strings: feedbackText,
+                    title: sheet == .feedback ? .feedbackTitle : .problemTitle,
+                    prompt: sheet == .feedback ? .feedbackPrompt : .problemPrompt,
+                    context: sheet == .feedback ? [] : ["Action: Couldn’t Save Card", "Error: card.save"],
+                    onDismiss: { self.sheet = nil })
+            }
         }
     }
 }
@@ -117,5 +127,17 @@ func feedbackText(_ string: FeedbackString) -> String {
     case .discardMessage: String(localized: "Your changes won’t be saved.")
     case .discard: String(localized: "Discard Changes")
     case .keepEditing: String(localized: "Keep Editing")
+    }
+}
+
+func crashReportText(_ string: CrashReportString) -> String {
+    switch string {
+    case .title: String(localized: "Example Closed Unexpectedly")
+    case .message:
+        String(localized: "Send a report to the developer? It says where the app closed, with the app and system versions and the device model. Nothing you wrote is in it.")
+    case .privacyLink: String(localized: "About Crash Reports")
+    case .send: String(localized: "Send")
+    case .alwaysSend: String(localized: "Always Send")
+    case .dontSend: String(localized: "Don’t Send")
     }
 }

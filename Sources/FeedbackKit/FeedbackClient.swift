@@ -125,8 +125,16 @@ final class FeedbackClient: FeedbackSender {
     }
 
     func send(_ submission: FeedbackSubmission) async throws(FeedbackError) {
+        try await self.send(submission, to: "v1/feedback")
+    }
+
+    func send(_ report: CrashReport) async throws(FeedbackError) {
+        try await self.send(report, to: "v1/crash")
+    }
+
+    private func send(_ value: some Encodable, to path: String) async throws(FeedbackError) {
         do {
-            try await self.deliver(submission)
+            try await self.deliver(value, to: path)
         } catch let error as FeedbackError {
             throw error
         } catch is InvalidKey {
@@ -136,13 +144,14 @@ final class FeedbackClient: FeedbackSender {
         } catch StoreKitError.networkError(_) {
             throw .offline
         } catch {
-            self.logger.error("Feedback was not sent: \(Self.describe(error), privacy: .public)")
+            self.logger.error("\(path, privacy: .public) was not sent: \(Self.describe(error), privacy: .public)")
             throw .failed
         }
     }
 
     static func clientData(
         challenge: Data,
+        path: String,
         bodySHA256: Data,
         idempotencyKey: String,
         appTransaction: String,
@@ -151,7 +160,7 @@ final class FeedbackClient: FeedbackSender {
         let fields = [
             challenge,
             Data("POST".utf8),
-            Data("/v1/feedback".utf8),
+            Data(path.utf8),
             bodySHA256,
             Data(idempotencyKey.utf8),
             Data(SHA256.hash(data: Data(appTransaction.utf8))),
@@ -163,16 +172,16 @@ final class FeedbackClient: FeedbackSender {
         }
     }
 
-    private func deliver(_ submission: FeedbackSubmission) async throws {
+    private func deliver(_ value: some Encodable, to path: String) async throws {
         guard self.attestation.isSupported else { throw FeedbackError.unsupported }
-        let body = try Self.encode(submission)
+        let body = try Self.encode(value)
         let appTransaction = try await self.appTransaction()
         var canRotate = true
         var canRegisterAgain = true
         while true {
             let key = try await self.registeredKey(appTransaction: appTransaction, canRotate: &canRotate)
             do {
-                try await self.submit(body, key: key, appTransaction: appTransaction)
+                try await self.submit(body, to: path, key: key, appTransaction: appTransaction)
                 return
             } catch is InvalidKey where canRotate {
                 canRotate = false
@@ -233,7 +242,7 @@ final class FeedbackClient: FeedbackSender {
             expecting: 204)
     }
 
-    private func submit(_ body: Data, key: Key, appTransaction: String) async throws {
+    private func submit(_ body: Data, to path: String, key: Key, appTransaction: String) async throws {
         let digest = Data(SHA256.hash(data: body))
         let idempotencyKey = self.pendingSubmit.flatMap { $0.digest == digest ? $0.idempotencyKey : nil }
             ?? Self.newIdempotencyKey()
@@ -245,6 +254,7 @@ final class FeedbackClient: FeedbackSender {
                 appTransaction: appTransaction)
             let clientData = Self.clientData(
                 challenge: challenge.bytes,
+                path: "/\(path)",
                 bodySHA256: digest,
                 idempotencyKey: idempotencyKey,
                 appTransaction: appTransaction,
@@ -255,7 +265,7 @@ final class FeedbackClient: FeedbackSender {
                     clientDataHash: Data(SHA256.hash(data: clientData)))
             }
             try await self.post(
-                "v1/feedback",
+                path,
                 body: body,
                 idempotencyKey: idempotencyKey,
                 appTransaction: appTransaction,

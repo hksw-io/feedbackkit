@@ -156,6 +156,7 @@ final class FeedbackClientTests {
         let body = Data(#"{"message":"Hi"}"#.utf8)
         let clientData = FeedbackClient.clientData(
             challenge: Data(0 ..< 32),
+            path: "/v1/feedback",
             bodySHA256: Data(SHA256.hash(data: body)),
             idempotencyKey: "feedback-0001-abcdef",
             appTransaction: Self.appTransaction,
@@ -216,6 +217,7 @@ final class FeedbackClientTests {
         #expect(requests[3]["X-Feedback-App-Attest-Assertion"] == Data("assertion-1".utf8).base64URL)
         let clientData = FeedbackClient.clientData(
             challenge: submit.bytes,
+            path: "/v1/feedback",
             bodySHA256: bodySHA256,
             idempotencyKey: idempotencyKey,
             appTransaction: Self.appTransaction,
@@ -230,6 +232,44 @@ final class FeedbackClientTests {
             "device": "iPhone17,2",
             "language": "sv",
             "context": [String](),
+        ])
+    }
+
+    @Test
+    func `a crash report goes to its own route, with an assertion that names it`() async throws {
+        let report = try #require(try CrashReportTests.report(exceptionName: "NSInvalidArgumentException", className: "NSException"))
+
+        try await self.makeClient().send(report)
+
+        #expect(self.transport.paths == [Self.challenges, Self.keys, Self.challenges, "/v1/crash"])
+        let request = self.transport.requests[3]
+        let body = try #require(request.httpBody)
+        let keyID = try #require(self.attestation.keys.first)
+        let clientData = FeedbackClient.clientData(
+            challenge: self.transport.challenges[1].bytes,
+            path: "/v1/crash",
+            bodySHA256: Data(SHA256.hash(data: body)),
+            idempotencyKey: try #require(request["Idempotency-Key"]),
+            appTransaction: Self.appTransaction,
+            keyID: try #require(Data(base64Encoded: keyID)))
+        #expect(self.attestation.assertionCalls == [
+            .init(keyID: keyID, clientDataHash: Data(SHA256.hash(data: clientData))),
+        ])
+        #expect(request.json == [
+            "appVersion": "1.23.0 (295)",
+            "system": "iPhone OS 26.1 (23B85)",
+            "device": "iPhone17,2",
+            "exceptionType": 1,
+            "exceptionCode": 0,
+            "signal": 11,
+            "exceptionName": "NSInvalidArgumentException",
+            "className": "NSException",
+            "site": "Swiftflip+0x1a2b3c",
+            "frames": [
+                ["binary": "libswiftCore.dylib", "uuid": CrashReportTests.core, "offset": 100],
+                ["binary": "Swiftflip", "uuid": CrashReportTests.app, "offset": 1_715_004],
+                ["binary": "SwiftUICore", "uuid": CrashReportTests.ui, "offset": 220],
+            ],
         ])
     }
 

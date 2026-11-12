@@ -218,6 +218,73 @@ FeedbackView(sender: PreviewSender(), icon: Image("AppIconImage"), strings: feed
 
 The demo app in `Demo/` does this with a picker for each outcome.
 
+## Crash reports
+
+`CrashReporter` takes the crash reports MetricKit hands the app on the launch after a crash, and sends them
+to the HK Softworks feedback service only when the person agrees. MetricKit never hands over a report from
+before the app subscribed, so create the reporter and start it as the app launches:
+
+```swift
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    let crashReporter = CrashReporter(serviceURL: feedbackURL)
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool
+    {
+        self.crashReporter.start()
+        return true
+    }
+}
+```
+
+While `isAsking` is `true`, present `CrashReportView` in a sheet, once nothing else is on screen: never over
+onboarding or another sheet. It asks whether to send a report, links to your privacy policy, and offers
+Send, Always Send and Don't Send, none of them the default. Swiping the sheet down or pressing Escape is
+Don't Send, and reports nobody answers are dropped when the app quits.
+
+```swift
+.sheet(isPresented: Binding(get: { crashReporter.isAsking && !isShowingAnotherSheet }, set: { _ in })) {
+    CrashReportView(reporter: crashReporter, privacyURL: privacyURL, strings: crashReportText)
+}
+```
+
+Always Send turns on `alwaysSends`, which is kept in `UserDefaults` and sends every later report without
+asking. Give the person a switch bound to it to turn it off, and hide the switch when `canSend` is `false`.
+`canSend` is `false` without App Attest, on a Mac before macOS 27 and in the Simulator; there `start()` does
+nothing and nothing is ever asked. UI tests can find the prompt by the accessibility identifier
+`feedback.crashReport`.
+
+`CrashReportView` takes its copy the way the form does. This English copy is a starting point:
+
+```swift
+import FeedbackKit
+
+func crashReportText(_ string: CrashReportString) -> String {
+    switch string {
+    case .title: String(localized: "Example Closed Unexpectedly")
+    case .message:
+        String(localized: "Send a report to the developer? It says where the app closed, with the app and system versions and the device model. Nothing you wrote is in it.")
+    case .privacyLink: String(localized: "About Crash Reports")
+    case .send: String(localized: "Send")
+    case .alwaysSend: String(localized: "Always Send")
+    case .dontSend: String(localized: "Don’t Send")
+    }
+}
+```
+
+A report holds the crashed run's app version and build, system version and hardware model; the Mach
+exception type and code, the signal, and an Objective-C exception's name and class; and the crashed
+thread's frames, top first, each a binary's name, its UUID and the offset into it, at most 512. Its site, the
+first frame in the app's own code, is what the service groups reports by. It never holds an exception's
+message or arguments, which can contain what someone typed, the other threads, signposts, the process
+ID, the region format or Low Power Mode. Frames are not symbolicated: use the build's dSYM.
+
+On iOS and macOS 27 the reporter reads MetricKit's `MetricManager`; before, `MXMetricManager`. MetricKit
+doesn't report every crash, and a crash under the debugger reaches the debugger instead: to try it, launch
+the app from the Home Screen or the Finder. The kit's privacy manifest declares Crash Data, not linked to
+the person and not used for tracking. On the App Store, that's Diagnostics › Crash Data, Not Linked to You.
+
 ## Behavior
 
 - Send is enabled whenever the trimmed message is 1 to 5,000 characters long. A longer message is kept as
@@ -251,6 +318,8 @@ service isn't open source; this summary is for reviewing what the kit sends. For
    `POST /v1/feedback` with the key ID, the challenge ID and the assertion over SHA-256 of that client
    data.
 
+A crash report goes the same way to `POST /v1/crash`, with `/v1/crash` in its client data.
+
 Binary values are base64url without padding. Recovery follows the contract:
 
 - `428` with `app-attest-key-unregistered` generates and registers a new key and resends, once. DeviceCheck
@@ -277,8 +346,12 @@ Binary values are base64url without padding. Recovery follows the contract:
   kept in `UserDefaults.standard` under `<bundle ID>.feedbackKit.appAttestKeyID` and
   `<bundle ID>.feedbackKit.appAttestKeyRegistered`. A key restored from a backup onto another device is
   invalid there and is replaced on the next send.
-- The kit logs to the app's own subsystem only when a send fails, with the HTTP status or the error
-  domain and code. It never logs the message, the email address, JWS values, assertions or key IDs.
+- Always Send is kept in `UserDefaults.standard` under `<bundle ID>.feedbackKit.alwaysSendCrashReports`.
+  The service keeps a crash report with its app and the day it came in, and nothing that names the
+  install, for 90 days.
+- The kit logs to the app's own subsystem only when a send fails or a crash report is dropped or can't be
+  read, with the HTTP status or the error domain and code. It never logs the message, the email address,
+  a crash report, JWS values, assertions or key IDs.
 - For the App Store privacy label, feedback usually maps to User Content (Customer Support), Contact
   Info (Email Address, when one is given) and Diagnostics. The service also keeps an opaque per-install
   hash it derives from the AppTransaction. None of it is used for tracking.
