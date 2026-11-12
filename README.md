@@ -282,7 +282,10 @@ about and sent, with no frames and no site. It never holds an exception's
 message or arguments, which can contain what someone typed, the other threads, signposts, the process
 ID, the region format or Low Power Mode. Frames are not symbolicated: use the build's dSYM.
 
-On iOS and macOS 27 the reporter reads MetricKit's `MetricManager`; before, `MXMetricManager`. MetricKit
+On iOS and macOS 27 the reporter reads MetricKit's `MetricManager`; before, `MXMetricManager`. On 27 it also adds
+an `MXMetricManager` subscriber that ignores what it gets, because MetricKit starts collecting an app's reports once
+one is added. Don't read `MetricManager.diagnosticReports` elsewhere in the app: two readers each get only some of the
+reports. MetricKit
 doesn't report every crash, and a crash under the debugger reaches the debugger instead: to try it, launch
 the app from the Home Screen or the Finder. The kit's privacy manifest declares Crash Data, not linked to
 the person and not used for tracking. On the App Store, that's Diagnostics › Crash Data, Not Linked to You.

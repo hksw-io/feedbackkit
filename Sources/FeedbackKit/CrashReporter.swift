@@ -27,7 +27,7 @@ public final class CrashReporter {
     @ObservationIgnored private let deliver: @MainActor (CrashReport) async -> Void
     @ObservationIgnored private let logger: Logger
     @ObservationIgnored private var waiting: [CrashReport] = []
-    @ObservationIgnored private var subscriber: Subscriber?
+    @ObservationIgnored private var subscriber: (any MXMetricManagerSubscriber)?
     @ObservationIgnored private var isStarted = false
 
     /// Creates a reporter that sends to the HK Softworks feedback service.
@@ -63,6 +63,9 @@ public final class CrashReporter {
         self.isStarted = true
         let appBinaries = Self.appBinaries
         if #available(iOS 27, macOS 27, *) {
+            let registration = Registration()
+            MXMetricManager.shared.add(registration)
+            self.subscriber = registration
             let manager = MetricManager()
             Task { [weak self] in
                 for await report in manager.diagnosticReports {
@@ -128,6 +131,12 @@ public final class CrashReporter {
         let bundles = Bundle.allFrameworks.filter { $0.bundleURL.standardizedFileURL.path.hasPrefix(app) } + [Bundle.main]
         return Set(bundles.compactMap { $0.executableURL?.lastPathComponent })
     }
+
+    /// On iOS and macOS 27, a subscriber that only registers the app. `MXMetricManager`'s documentation says MetricKit
+    /// starts collecting an app's reports once it adds one, and `MetricManager`'s doesn't say how it starts. On an
+    /// iPhone with iOS 27.3, a fresh install that only read `MetricManager` got none of its first three crashes. Reports
+    /// are still read through `MetricManager` alone, so none comes twice.
+    private final class Registration: NSObject, MXMetricManagerSubscriber, Sendable {}
 
     /// MetricKit's subscriber before iOS and macOS 27, which hands over payloads on a queue of its own.
     private final class Subscriber: NSObject, MXMetricManagerSubscriber, Sendable {

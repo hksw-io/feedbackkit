@@ -8,7 +8,7 @@ All notable changes to FeedbackKit are recorded here. The format follows
 
 ### Added
 
-- `CrashReporter` takes the crash reports MetricKit hands the app on the launch after a crash and sends them to the HK Softworks feedback service's `POST /v1/crash`, only when the person agrees. Start it as the app launches. It reads `MetricManager` on iOS and macOS 27 and `MXMetricManager` before, and does nothing without App Attest, so on a Mac before macOS 27 and in the Simulator.
+- `CrashReporter` takes the crash reports MetricKit hands the app on the launch after a crash and sends them to the HK Softworks feedback service's `POST /v1/crash`, only when the person agrees. Start it as the app launches. It reads `MetricManager` on iOS and macOS 27, where it also registers with `MXMetricManager` so MetricKit collects, and `MXMetricManager` before, and does nothing without App Attest, so on a Mac before macOS 27 and in the Simulator.
 - `CrashReportView` asks whether to send: Send, Always Send and Don't Send, none of them the default, with a link to the app's privacy policy. Swiping it down or pressing Escape is Don't Send. Its copy comes from the new `CrashReportString`, so apps that switch over `FeedbackString` don't change.
 - `alwaysSends` keeps Always Send in `UserDefaults` under `<bundle ID>.feedbackKit.alwaysSendCrashReports`, for a switch that turns it off.
 - A report holds the crashed run's version, system and device, the exception and signal, an Objective-C exception's name and class, and the crashed thread's frames, at most 512, or none when MetricKit gives the crashed thread no stack. Never an exception's message or arguments, which can hold what someone typed. A stack too deep for Foundation's JSON reader, such as from runaway recursion, is still read.
