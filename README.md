@@ -280,7 +280,7 @@ first frame in the app's own code, is what the service groups reports by. Metric
 crashed thread no stack, as for an uncaught Objective-C exception on iOS 27.3; such a report is still asked
 about and sent, with no frames and no site. It never holds an exception's
 message or arguments, which can contain what someone typed, the other threads, signposts, the process
-ID, the region format or Low Power Mode. Frames are not symbolicated: use the build's dSYM.
+ID, the region format or Low Power Mode. Frames are not symbolicated: see [Keep every build's dSYMs](#keep-every-builds-dsyms).
 
 On iOS and macOS 27 the reporter reads MetricKit's `MetricManager`; before, `MXMetricManager`. On 27 it also adds
 an `MXMetricManager` subscriber that ignores what it gets, because MetricKit starts collecting an app's reports once
@@ -289,6 +289,26 @@ reports. MetricKit
 doesn't report every crash, and a crash under the debugger reaches the debugger instead: to try it, launch
 the app from the Home Screen or the Finder. The kit's privacy manifest declares Crash Data, not linked to
 the person and not used for tracking. On the App Store, that's Diagnostics › Crash Data, Not Linked to You.
+
+### Keep every build's dSYMs
+
+An app that uses `CrashReporter` must keep the dSYMs of every build it ships. A report's frames are a binary's
+name, UUID and offset, and only the dSYM with the same UUID, from the build that crashed, turns them into
+functions, files and lines. Rebuilding the same commit gives new UUIDs. Uploading symbols to App Store Connect
+doesn't help: Apple uses them for its own crash logs and never hands them back.
+
+Keep each archive's `dSYMs` folder as a CI artifact named `dSYMs-<platform>-<build>`, where `<platform>` is `ios`
+or `macos` and `<build>` is the build number (`CFBundleVersion`). Keep it for at least 90 days, as long as the
+service keeps reports. In GitHub Actions, right after the archive step:
+
+```yaml
+- uses: actions/upload-artifact@v7
+  with:
+    name: dSYMs-ios-${{ env.BUILD_NUMBER }}
+    path: ${{ steps.archive.outputs.archive-path }}/dSYMs
+    if-no-files-found: error
+    retention-days: 90
+```
 
 ## Behavior
 
